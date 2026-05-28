@@ -1,0 +1,248 @@
+@import "tailwindcss";
+
+:root {
+  --surface: #faf9f9;
+  --surface-dim: #dadada;
+  --surface-bright: #faf9f9;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f4f3f3;
+  --surface-container: #efeeed;
+  --surface-container-high: #e9e8e8;
+  --surface-container-highest: #e3e2e2;
+  --surface-variant: #e3e2e2;
+  --on-surface: #1a1c1c;
+  --on-surface-variant: #4c4546;
+  --inverse-surface: #2f3131;
+  --inverse-on-surface: #f1f0f0;
+  --outline: #7e7576;
+  --outline-variant: #cfc4c5;
+  --surface-tint: #5e5e5e;
+  --primary: #000000;
+  --on-primary: #ffffff;
+  --primary-container: #1b1b1b;
+  --on-primary-container: #848484;
+  --inverse-primary: #c6c6c6;
+  --secondary: #5e5e5e;
+  --on-secondary: #ffffff;
+  --secondary-container: #e1dfdf;
+  --on-secondary-container: #626262;
+  --tertiary: #000000;
+  --on-tertiary: #ffffff;
+  --tertiary-container: #1a1c1c;
+  --on-tertiary-container: #838484;
+  --error: #ba1a1a;
+  --on-error: #ffffff;
+  --error-container: #ffdad6;
+  --on-error-container: #93000a;
+  --primary-fixed: #e2e2e2;
+  --primary-fixed-dim: #c6c6c6;
+  --on-primary-fixed: #1b1b1b;
+  --on-primary-fixed-variant: #474747;
+  --secondary-fixed: #e4e2e2;
+  --secondary-fixed-dim: #c7c6c6;
+  --on-secondary-fixed: #1b1c1c;
+  --on-secondary-fixed-variant: #464747;
+  --tertiary-fixed: #e2e2e2;
+  --tertiary-fixed-dim: #c6c6c7;
+  --on-tertiary-fixed: #1a1c1c;
+  --on-tertiary-fixed-variant: #454747;
+
+  --background: var(--surface);
+  --foreground: var(--on-surface);
+  --muted: #f5f5f5;
+  --muted-foreground: var(--on-surface-variant);
+  --card: var(--surface-container-lowest);
+  --border: #e0e0e0;
+  --accent: var(--primary);
+  --accent-soft: var(--primary-fixed);
+  --warning: var(--secondary);
+  --warning-soft: var(--surface-container-high);
+  --danger: var(--error);
+  --danger-soft: var(--error-container);
+  --brand: var(--primary);
+  --brand-soft: var(--primary-fixed);
+
+  --radius-sm: 0.125rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --spacing-base: 8px;
+  --setu-shadow-overlay: 0 4px 12px rgb(0 0 0 / 0.05);
+  --setu-font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+@theme inline {
+  --font-sans: var(--setu-font-sans);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-card: var(--card);
+  --color-border: var(--border);
+  --color-outline: var(--outline);
+  --color-outline-variant: var(--outline-variant);
+  --color-surface: var(--surface);
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-high: var(--surface-container-high);
+  --color-surface-container-highest: var(--surface-container-highest);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --radius-sm: 0.125rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --shadow-overlay: var(--setu-shadow-overlay);
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--setu-font-sans);
+  font-size: 14px;
+  line-height: 20px;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1 {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 32px;
+}
+
+h2 {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+}
+
+h3 {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.text-headline-lg {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 32px;
+}
+
+.text-headline-md {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+}
+
+.text-headline-sm {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.text-body-lg {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+}
+
+.text-body-md {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+}
+
+.text-body-sm {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+}
+
+.text-label-lg {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.1px;
+  line-height: 20px;
+}
+
+.text-label-md {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+}
+
+.text-label-sm {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  line-height: 14px;
+}
+
+.tracking-tight {
+  letter-spacing: 0;
+}
+
+.tracking-wide {
+  letter-spacing: 0.1px;
+}
+
+input, select, textarea {
+  color: var(--foreground);
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--muted-foreground);
+  opacity: 0.7;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  scrollbar-color: transparent transparent;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+  height: 0;
+  width: 0;
+}
+
+.no-scrollbar::-webkit-scrollbar-track,
+.no-scrollbar::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+@keyframes setu-progress {
+  0% {
+    transform: translateX(-105%);
+  }
+
+  55% {
+    transform: translateX(25%);
+  }
+
+  100% {
+    transform: translateX(170%);
+  }
+}
+
+.setu-progress-bar {
+  animation: setu-progress 1.45s ease-in-out infinite;
+  transform-origin: left center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .setu-progress-bar {
+    animation: none;
+    transform: translateX(35%);
+  }
+}

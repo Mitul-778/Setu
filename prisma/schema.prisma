@@ -1,0 +1,110 @@
+// Prisma schema for Trust-First Local Talent Marketplace
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id              String   @id @default(cuid())
+  role            String   // "customer" | "provider" | "admin"
+  phone           String   @unique
+  name            String
+  email           String?
+  preferredLang   String   @default("en")
+  city            String?
+  createdAt       DateTime @default(now())
+
+  provider        ProviderProfile?
+}
+
+model ProviderProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  category        String
+  bio             String   @default("")
+  languages       String   @default("[]") // JSON array of ISO codes
+  serviceRadiusKm Int      @default(5)
+  priceMin        Int      @default(0)
+  priceMax        Int      @default(0)
+  currency        String   @default("INR")
+
+  city            String?
+  area            String?
+  lat             Float?
+  lng             Float?
+
+  upiId           String?
+  voiceBioUrl     String?
+
+  onboardingStatus String  @default("draft") // draft | submitted | verified | rejected
+  trustScore      Int      @default(0)
+  submittedAt     DateTime?
+  verifiedAt      DateTime?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  verifications   ProviderVerification[]
+  portfolio       PortfolioItem[]
+  services        Service[]
+  availability    AvailabilitySlot[]
+}
+
+model ProviderVerification {
+  id              String   @id @default(cuid())
+  providerId      String
+  provider        ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  kind            String   // "id" | "reference" | "social" | "portfolio"
+  status          String   @default("pending") // pending | approved | rejected
+  label           String
+  value           String?
+  adminNotes      String?
+  decidedAt       DateTime?
+
+  createdAt       DateTime @default(now())
+}
+
+model PortfolioItem {
+  id              String   @id @default(cuid())
+  providerId      String
+  provider        ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  type            String   @default("image") // image | menu | screenshot | video
+  mediaUrl        String
+  caption         String?
+  verified        Boolean  @default(false)
+
+  createdAt       DateTime @default(now())
+}
+
+model Service {
+  id              String   @id @default(cuid())
+  providerId      String
+  provider        ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  name            String
+  category        String
+  mode            String   @default("onsite")
+  startingPrice   Int
+  trialAvailable  Boolean  @default(false)
+  trialPrice      Int?
+  description     String   @default("")
+}
+
+model AvailabilitySlot {
+  id              String   @id @default(cuid())
+  providerId      String
+  provider        ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  weekday         Int      // 0-6 (Sun=0)
+  startTime       String   // "HH:mm"
+  endTime         String
+}
