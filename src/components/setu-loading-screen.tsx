@@ -5,8 +5,8 @@ const cityIllustration =
 
 export function SetuLoadingScreen() {
   return (
-    <main className="fixed inset-0 h-dvh w-screen overflow-hidden bg-[var(--background)] text-[var(--foreground)]">
-      <div className="mx-auto flex h-full w-full max-w-[480px] flex-col overflow-hidden px-5 min-[390px]:px-6">
+    <main className="fixed inset-0 h-dvh w-full overflow-hidden bg-black text-[var(--foreground)]">
+      <div className="mx-auto flex h-full w-full max-w-[480px] flex-col overflow-hidden bg-[var(--background)] px-5 min-[390px]:px-6">
         <AndroidStatusBar />
 
         <section className="relative flex min-h-0 flex-1 flex-col items-center overflow-hidden">
