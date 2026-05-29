@@ -234,7 +234,7 @@ function CancellationPolicy() {
 
 function CheckoutFooter() {
   return (
-    <footer className="fixed inset-x-0 bottom-0 z-50 border-t border-[var(--outline-variant)] bg-[var(--surface)] px-4 py-3">
+    <footer className="fixed bottom-0 left-1/2 z-50 w-full max-w-[480px] -translate-x-1/2 border-t border-[var(--outline-variant)] bg-[var(--surface)] px-4 py-3">
       <div className="mx-auto flex w-full max-w-[480px] items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-label-sm text-[var(--on-surface-variant)]">

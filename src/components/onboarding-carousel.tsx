@@ -97,7 +97,7 @@ export function OnboardingCarousel() {
           </div>
         </section>
 
-        <footer className="fixed inset-x-0 bottom-0 z-50 bg-[var(--background)] px-4 pb-8 pt-4 min-[390px]:px-5">
+        <footer className="fixed bottom-0 left-1/2 z-50 w-full max-w-[480px] -translate-x-1/2 bg-[var(--background)] px-4 pb-8 pt-4 min-[390px]:px-5">
           <div className="mx-auto flex w-full max-w-[480px] flex-col items-center gap-5">
             <Dots activeIndex={activeIndex} />
 

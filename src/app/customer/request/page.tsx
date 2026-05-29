@@ -276,7 +276,7 @@ function TrustNote() {
 
 function CustomerBottomNav() {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]">
+    <nav className="fixed bottom-0 left-1/2 z-50 w-full max-w-[480px] -translate-x-1/2 border-t border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]">
       <div className="mx-auto grid h-20 w-full max-w-[480px] grid-cols-5 px-1 pb-[env(safe-area-inset-bottom)] text-[var(--on-surface-variant)]">
         {navItems.map(({ active, href, icon: Icon, label }) => (
           <Link

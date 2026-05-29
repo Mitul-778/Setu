@@ -329,7 +329,7 @@ function CheckboxRow({
 
 function FiltersFooter() {
   return (
-    <footer className="fixed inset-x-0 bottom-0 z-50 border-t border-[var(--outline-variant)] bg-[var(--surface)] px-4 py-3">
+    <footer className="fixed bottom-0 left-1/2 z-50 w-full max-w-[480px] -translate-x-1/2 border-t border-[var(--outline-variant)] bg-[var(--surface)] px-4 py-3">
       <div className="mx-auto grid w-full max-w-[480px] grid-cols-[1fr_1.4fr] gap-3">
         <Link
           className="flex min-h-12 items-center justify-center rounded-md border border-[var(--outline)] bg-[var(--surface-container-lowest)] px-4 text-label-lg"

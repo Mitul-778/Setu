@@ -226,7 +226,7 @@ function AssistantFollowUp() {
 
 function Composer() {
   return (
-    <footer className="fixed inset-x-0 bottom-0 z-50 border-t border-[var(--outline-variant)] bg-[var(--surface)] px-4 py-3 shadow-[0_-4px_12px_rgb(0_0_0_/_0.02)]">
+    <footer className="fixed bottom-0 left-1/2 z-50 w-full max-w-[480px] -translate-x-1/2 border-t border-[var(--outline-variant)] bg-[var(--surface)] px-4 py-3 shadow-[0_-4px_12px_rgb(0_0_0_/_0.02)]">
       <div className="mx-auto w-full max-w-[480px]">
         <div className="flex items-center gap-2 rounded-lg border border-[var(--outline)] bg-[var(--surface-container-lowest)] px-3 py-2 focus-within:border-[var(--primary)]">
           <button
