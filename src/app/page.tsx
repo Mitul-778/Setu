@@ -157,7 +157,7 @@ function ActionCards() {
     <section className="flex flex-col gap-3">
       <Link
         className="block min-h-28 rounded-lg bg-[var(--primary)] p-5 text-left text-[var(--on-primary)] min-[390px]:p-6"
-        href="/onboarding"
+        href="/onboarding?intent=customer"
       >
         <div className="flex items-start justify-between gap-3 min-[390px]:gap-4">
           <div>
@@ -171,7 +171,10 @@ function ActionCards() {
         </div>
       </Link>
 
-      <button className="min-h-28 rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-highest)] p-5 text-left text-[var(--on-surface)] min-[390px]:p-6">
+      <Link
+        className="block min-h-28 rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-highest)] p-5 text-left text-[var(--on-surface)] min-[390px]:p-6"
+        href="/onboarding?intent=provider"
+      >
         <div className="flex items-start justify-between gap-3 min-[390px]:gap-4">
           <div>
             <h2 className="text-headline-sm">Offer a service</h2>
@@ -182,7 +185,7 @@ function ActionCards() {
           </div>
           <ArrowRight className="mt-1 h-6 w-6 shrink-0" />
         </div>
-      </button>
+      </Link>
 
       <div className="rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-3.5 text-[var(--on-surface)]">
         <div className="flex items-center gap-2">
@@ -195,7 +198,6 @@ function ActionCards() {
     </section>
   );
 }
-
 function RecommendedProviders() {
   return (
     <section className="flex flex-col gap-3">

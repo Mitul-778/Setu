@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   BadgeCheck,
@@ -49,8 +49,17 @@ const slides = [
 
 export function OnboardingCarousel() {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [intent, setIntent] = useState<"customer" | "provider">("customer");
   const activeSlide = slides[activeIndex];
   const isLastSlide = activeIndex === slides.length - 1;
+  const loginHref = `/login?intent=${intent}`;
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const nextIntent = params.get("intent") === "provider" ? "provider" : "customer";
+    setIntent(nextIntent);
+    window.sessionStorage.setItem("setu.authIntent", nextIntent);
+  }, []);
 
   function goBack() {
     setActiveIndex((current) => Math.max(0, current - 1));
@@ -104,7 +113,7 @@ export function OnboardingCarousel() {
             {isLastSlide ? (
               <Link
                 className="flex min-h-12 w-full max-w-[22rem] items-center justify-center rounded-md bg-[var(--primary)] text-label-lg text-[var(--on-primary)]"
-                href="/login"
+                href={loginHref}
               >
                 Get Started
               </Link>

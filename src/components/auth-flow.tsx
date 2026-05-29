@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -15,6 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 
 type AuthMode = "login" | "otp";
+type AuthIntent = "customer" | "provider";
 
 export function AuthFlow({ mode }: { mode: AuthMode }) {
   return (
@@ -50,6 +51,14 @@ function AuthHeader() {
 
 function LoginScreen() {
   const [whatsAppUpdates, setWhatsAppUpdates] = useState(true);
+  const [intent, setIntent] = useState<AuthIntent>("customer");
+  const verifyOtpHref = `/verify-otp?intent=${intent}`;
+
+  useEffect(() => {
+    const nextIntent = readAuthIntent();
+    setIntent(nextIntent);
+    window.sessionStorage.setItem("setu.authIntent", nextIntent);
+  }, []);
 
   return (
     <section className="flex min-h-0 flex-1 flex-col px-4 pb-6 pt-10 min-[390px]:px-5">
@@ -90,7 +99,7 @@ function LoginScreen() {
               "flex h-5 w-5 items-center justify-center rounded-sm border-2",
               whatsAppUpdates
                 ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--on-primary)]"
-                : "border-[var(--outline)]"
+                : "border-[var(--outline)]",
             )}
           >
             {whatsAppUpdates && <Check className="h-3.5 w-3.5" />}
@@ -108,7 +117,7 @@ function LoginScreen() {
       <div className="mt-auto flex flex-col gap-4">
         <Link
           className="flex min-h-12 items-center justify-center rounded-md bg-[var(--primary)] text-label-lg text-[var(--on-primary)]"
-          href="/verify-otp"
+          href={verifyOtpHref}
         >
           Get OTP
         </Link>
@@ -121,8 +130,16 @@ function LoginScreen() {
 
 function VerifyOtpScreen() {
   const [secondsLeft, setSecondsLeft] = useState(29);
+  const [intent, setIntent] = useState<AuthIntent>("customer");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const nextHref = intent === "provider" ? "/provider" : "/permissions";
+
+  useEffect(() => {
+    const nextIntent = readAuthIntent();
+    setIntent(nextIntent);
+    window.sessionStorage.setItem("setu.authIntent", nextIntent);
+  }, []);
 
   useEffect(() => {
     if (secondsLeft <= 0) return;
@@ -229,7 +246,7 @@ function VerifyOtpScreen() {
 
         <Link
           className="flex min-h-12 items-center justify-center rounded-md bg-[var(--primary)] text-label-lg text-[var(--on-primary)]"
-          href="/permissions"
+          href={nextHref}
         >
           Verify & Continue
         </Link>
@@ -245,4 +262,15 @@ function TrustNote({ text }: { text: string }) {
       <p>{text}</p>
     </div>
   );
+}
+
+function readAuthIntent(): AuthIntent {
+  const params = new URLSearchParams(window.location.search);
+  const fromUrl = params.get("intent");
+
+  if (fromUrl === "provider" || fromUrl === "customer") {
+    return fromUrl;
+  }
+
+  return window.sessionStorage.getItem("setu.authIntent") === "provider" ? "provider" : "customer";
 }
