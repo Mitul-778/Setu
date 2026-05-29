@@ -20,7 +20,6 @@ import {
   providerExperienceLevels,
   providerLanguageOptions,
   providerServiceOptions,
-  type PricingGuidance,
   type ProviderExperienceId,
   type ProviderServiceId,
 } from "@/lib/provider-profile-draft";
@@ -86,22 +85,6 @@ export default function ProviderServicesPage() {
     updateDraft({ serviceNames: nextNames.length ? nextNames : ["New service"] });
   }
 
-  function updatePricingItem(index: number, patch: Partial<PricingGuidance>) {
-    updateDraft({
-      pricingGuidance: draft.pricingGuidance.map((item, itemIndex) =>
-        itemIndex === index ? { ...item, ...patch } : item
-      ),
-    });
-  }
-
-  function addPricingItem() {
-    updateDraft({
-      pricingGuidance: [
-        ...draft.pricingGuidance,
-        { label: "New package", range: "\u20B9500 - \u20B91,000" },
-      ],
-    });
-  }
 
   return (
     <main className="min-h-dvh overflow-x-hidden bg-black text-[var(--on-surface)]">
@@ -263,7 +246,7 @@ export default function ProviderServicesPage() {
                   Profile Details
                 </h3>
                 <p className="mt-1 text-body-sm text-[var(--on-surface-variant)]">
-                  Fill manually here, or use Setu AI to draft the same fields.
+Fill manually here, or use Setu AI to draft the same profile details.
                 </p>
               </div>
               <Link
@@ -317,59 +300,13 @@ export default function ProviderServicesPage() {
               </div>
             </div>
 
-            <div className="mt-5">
-              <label className="block">
-                <span className="text-label-md text-[var(--on-surface)]">Starting Price</span>
-                <div className="mt-1 flex min-h-11 overflow-hidden rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] focus-within:border-[var(--primary)]">
-                  <span className="flex shrink-0 items-center border-r border-[var(--outline-variant)] bg-[var(--surface-container-low)] px-3 text-label-lg">
-                    {"\u20B9"}
-                  </span>
-                  <input
-                    className="min-w-0 flex-1 bg-transparent px-3 text-body-md outline-none"
-                    inputMode="numeric"
-                    onChange={(event) => updateDraft({ startingPrice: event.target.value })}
-                    value={draft.startingPrice}
-                  />
-                </div>
-              </label>
-            </div>
-
-            <div className="mt-5">
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <h4 className="text-label-lg text-[var(--on-surface)]">Pricing Guidance</h4>
-                <button
-                  className="flex min-h-8 items-center gap-1 rounded-full border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-3 text-label-md"
-                  onClick={addPricingItem}
-                  type="button"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add
-                </button>
-              </div>
-              <div className="flex flex-col gap-3">
-                {draft.pricingGuidance.map((item, index) => (
-                  <div className="rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-3" key={`${item.label}-${index}`}>
-                    <input
-                      className="min-h-10 w-full rounded-md border border-[var(--outline-variant)] bg-[var(--surface)] px-3 text-body-md outline-none focus:border-[var(--primary)]"
-                      onChange={(event) => updatePricingItem(index, { label: event.target.value })}
-                      value={item.label}
-                    />
-                    <input
-                      className="mt-2 min-h-10 w-full rounded-md border border-[var(--outline-variant)] bg-[var(--surface)] px-3 text-body-md outline-none focus:border-[var(--primary)]"
-                      onChange={(event) => updatePricingItem(index, { range: event.target.value })}
-                      value={item.range}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
           </section>
 
           <section className="mt-6 rounded-lg border border-[var(--surface-variant)] bg-[var(--surface-container-low)] p-3">
             <div className="flex items-start gap-3">
               <Info className="mt-0.5 h-5 w-5 shrink-0 text-[var(--on-surface-variant)]" />
               <p className="text-body-sm text-[var(--on-surface-variant)]">
-                Manual and AI flows now save to the same provider profile draft.
+Manual and AI flows save profile details here. Pricing and packages are handled in Service Settings.
               </p>
             </div>
           </section>

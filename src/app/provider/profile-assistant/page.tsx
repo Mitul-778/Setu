@@ -2,7 +2,6 @@
 
 import {
   ArrowLeft,
-  BadgeIndianRupee,
   Bot,
   Check,
   Edit3,
@@ -11,7 +10,6 @@ import {
   Plus,
   RefreshCcw,
   Sparkles,
-  TrendingUp,
   User,
   X,
 } from "lucide-react";
@@ -38,7 +36,7 @@ export default function ProviderProfileAssistantPage() {
 
     if (command === "simple") {
       updateDraft({
-        bio: `I provide ${primaryService} services in Bangalore. I speak ${languages}, arrive on time, and keep my pricing clear before every booking.`,
+        bio: `I provide ${primaryService} services in Bangalore. I speak ${languages}, arrive on time, and explain my service clearly before every booking.`,
       });
       return;
     }
@@ -51,7 +49,7 @@ export default function ProviderProfileAssistantPage() {
     }
 
     updateDraft({
-      bio: `I am a verified ${primaryService} professional in Bangalore with ${experienceLabel} of experience. I provide dependable service, transparent pricing, and comfortable communication in ${languages}.`,
+      bio: `I am a verified ${primaryService} professional in Bangalore with ${experienceLabel} of experience. I provide dependable service, clear communication, and comfortable support in ${languages}.`,
     });
   }
 
@@ -172,37 +170,6 @@ export default function ProviderProfileAssistantPage() {
             </div>
           </section>
 
-          <section className="mt-4 rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-2 text-[var(--primary)]">
-                <TrendingUp className="h-5 w-5" />
-                <h3 className="text-headline-sm text-[var(--on-surface)]">
-                  Pricing Guidance
-                </h3>
-              </div>
-              <EditWithAiButton label="Adjust" onClick={regenerateAiDraft} />
-            </div>
-
-            <div className="mt-3 flex flex-col gap-2">
-              {draft.pricingGuidance.map(({ label, range }) => (
-                <div
-                  className="flex items-center justify-between gap-3 rounded-md bg-[var(--surface-container-low)] px-3 py-2"
-                  key={label}
-                >
-                  <span className="text-body-sm text-[var(--on-surface-variant)]">{label}</span>
-                  <span className="shrink-0 text-label-md text-[var(--on-surface)]">{range}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-4 flex items-center justify-between gap-3 rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container)] px-3 py-2">
-              <span className="text-body-md text-[var(--on-surface)]">Suggested Starting Price</span>
-              <span className="flex items-center gap-1 text-headline-sm text-[var(--primary)]">
-                <BadgeIndianRupee className="h-5 w-5" />
-                {draft.startingPrice}
-              </span>
-            </div>
-          </section>
 
           <section className="mt-4 rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-low)] p-4">
             <div className="flex items-start gap-3">
@@ -212,7 +179,6 @@ export default function ProviderProfileAssistantPage() {
                 <div className="mt-3 flex flex-wrap gap-2">
                   <AiCommand label="Make simpler" onClick={() => applyAiCommand("simple")} />
                   <AiCommand label="More professional" onClick={() => applyAiCommand("professional")} />
-                  <AiCommand label="Regenerate pricing" onClick={regenerateAiDraft} />
                   <AiCommand label="Add trust points" onClick={() => applyAiCommand("trust")} />
                 </div>
               </div>
