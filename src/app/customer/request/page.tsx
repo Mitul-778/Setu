@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   User,
 } from "lucide-react";
+import { FileUploadPreview } from "@/components/file-upload-preview";
 
 const categories = ["Mehendi", "Makeup", "Plumbing", "Cleaning", "Food", "Other"];
 const waveformBars = [18, 28, 14, 34, 22, 12, 30, 18, 26, 10, 24, 16];
@@ -193,18 +194,13 @@ function PhotoUpload() {
   return (
     <section className="flex flex-col gap-2">
       <span className="text-label-md">Photo upload</span>
-      <button
-        className="flex min-h-32 flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-[var(--outline-variant)] bg-[var(--surface-container-low)] px-4 text-center"
-        type="button"
-      >
-        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--surface-container-lowest)]">
-          <Paperclip className="h-5 w-5" />
-        </span>
-        <span className="text-label-lg">Upload photos</span>
-        <span className="max-w-[240px] text-body-sm text-[var(--on-surface-variant)]">
-          Add references, damaged area, location entrance, or style examples.
-        </span>
-      </button>
+      <FileUploadPreview
+        accept="image/*"
+        hint="Add references, damaged area, location entrance, or style examples."
+        icon={Paperclip}
+        label="Upload photos"
+        multiple
+      />
     </section>
   );
 }

@@ -11,8 +11,8 @@ import {
   Quote,
   ShieldCheck,
   Utensils,
-  Video,
 } from "lucide-react";
+import { FileUploadPreview } from "@/components/file-upload-preview";
 
 const photoSlots = ["Bridal design", "Kitchen setup", "Event work"];
 
@@ -88,7 +88,16 @@ export default function ProviderShowcasePage() {
           <section className="mt-6">
             <SectionTitle title="Photos" badge="Required" />
             <div className="mt-3 grid grid-cols-3 gap-2">
-              <UploadTile label="Upload" icon={ImagePlus} />
+              <FileUploadPreview
+                accept="image/*"
+                className="contents"
+                emptyClassName="flex aspect-square cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-center"
+                icon={ImagePlus}
+                label="Upload"
+                multiple
+                previewClassName="contents"
+                previewItemClassName="relative aspect-square overflow-hidden rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]"
+              />
               {photoSlots.map((label) => (
                 <div
                   className="aspect-square rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container)] p-2"
@@ -108,30 +117,29 @@ export default function ProviderShowcasePage() {
           <Divider />
 
           <section>
-            <SectionTitle title="Intro Video" badge="Optional" />
-            <button
-              className="mt-3 flex aspect-video w-full flex-col items-center justify-center rounded-lg border border-dashed border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-center"
-              type="button"
-            >
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--surface-container-high)] text-[var(--on-surface)]">
-                <Video className="h-6 w-6" />
-              </span>
-              <span className="mt-3 text-label-lg text-[var(--on-surface)]">Record or upload video</span>
-              <span className="mt-1 text-body-sm text-[var(--on-surface-variant)]">30-60 seconds</span>
-            </button>
+            <SectionTitle title="Intro Image" badge="Optional" />
+            <FileUploadPreview
+              accept="image/*"
+              className="mt-3 flex flex-col gap-3"
+              emptyClassName="flex aspect-video w-full cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-center"
+              hint="Clear profile or workspace image"
+              icon={ImagePlus}
+              label="Upload intro image"
+              previewItemClassName="relative min-h-24 overflow-hidden rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]"
+            />
           </section>
 
           <Divider />
 
           <section>
             <SectionTitle title="Service Menu / Packages" badge="Recommended" />
-            <button
-              className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-label-lg"
-              type="button"
-            >
-              <FileText className="h-5 w-5" />
-              Upload Menu PDF
-            </button>
+            <FileUploadPreview
+              accept="image/*"
+              className="mt-3 flex flex-col gap-3"
+              emptyClassName="flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-label-lg"
+              icon={FileText}
+              label="Upload Menu Image"
+            />
             <div className="mt-3 flex flex-col gap-2">
               {serviceMenu.map(({ name, note, price }) => (
                 <article
@@ -179,16 +187,19 @@ export default function ProviderShowcasePage() {
                 <div className="mt-4 rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-low)] p-3">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="truncate text-label-md text-[var(--on-surface)]">FSSAI_Cert_2023.pdf</p>
+                      <p className="truncate text-label-md text-[var(--on-surface)]">FSSAI_Cert_2023.jpg</p>
                       <p className="text-body-sm text-[var(--on-surface-variant)]">1.2 MB</p>
                     </div>
                     <Check className="h-5 w-5 shrink-0 text-[var(--primary)]" />
                   </div>
                 </div>
-                <button className="mt-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-md border border-[var(--outline-variant)] bg-[var(--surface)] text-label-md" type="button">
-                  <FileText className="h-4 w-4" />
-                  Upload / Replace FSSAI
-                </button>
+                <FileUploadPreview
+                  accept="image/*"
+                  className="mt-3 flex flex-col gap-3"
+                  emptyClassName="flex min-h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-[var(--outline-variant)] bg-[var(--surface)] text-label-md"
+                  icon={FileText}
+                  label="Upload / Replace FSSAI"
+                />
               </article>
 
               <article className="rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-4">
@@ -203,10 +214,14 @@ export default function ProviderShowcasePage() {
                     </p>
                   </div>
                 </div>
-                <button className="mt-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-md border border-dashed border-[var(--outline)] bg-[var(--surface)] text-label-md" type="button">
-                  <Plus className="h-4 w-4" />
-                  Upload Document
-                </button>
+                <FileUploadPreview
+                  accept="image/*"
+                  className="mt-3 flex flex-col gap-3"
+                  emptyClassName="flex min-h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-[var(--outline)] bg-[var(--surface)] text-label-md"
+                  icon={Plus}
+                  label="Upload Document"
+                  multiple
+                />
               </article>
             </div>
           </section>
@@ -219,13 +234,16 @@ export default function ProviderShowcasePage() {
               Upload screenshots of reviews from other platforms or type them in.
             </p>
             <div className="no-scrollbar mt-3 flex gap-3 overflow-x-auto pb-1">
-              <button
-                className="flex aspect-square w-32 shrink-0 flex-col items-center justify-center rounded-lg border border-dashed border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-center"
-                type="button"
-              >
-                <ImagePlus className="h-6 w-6 text-[var(--outline)]" />
-                <span className="mt-2 text-label-sm text-[var(--outline)]">Add Screenshot</span>
-              </button>
+              <FileUploadPreview
+                accept="image/*"
+                className="contents"
+                emptyClassName="flex aspect-square w-32 shrink-0 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-center"
+                icon={ImagePlus}
+                label="Add Screenshot"
+                multiple
+                previewClassName="contents"
+                previewItemClassName="relative aspect-square w-32 shrink-0 overflow-hidden rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]"
+              />
               {testimonials.map(({ author, quote }) => (
                 <article
                   className="flex aspect-square w-40 shrink-0 flex-col rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-3"
@@ -279,26 +297,6 @@ function SectionTitle({ badge, title }: { badge: string; title: string }) {
         {badge}
       </span>
     </div>
-  );
-}
-
-function UploadTile({
-  icon: Icon,
-  label,
-}: {
-  icon: typeof ImagePlus;
-  label: string;
-}) {
-  return (
-    <button
-      className="aspect-square rounded-md border border-dashed border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-center"
-      type="button"
-    >
-      <span className="flex h-full flex-col items-center justify-center gap-2">
-        <Icon className="h-6 w-6 text-[var(--outline)]" />
-        <span className="text-label-sm text-[var(--outline)]">{label}</span>
-      </span>
-    </button>
   );
 }
 

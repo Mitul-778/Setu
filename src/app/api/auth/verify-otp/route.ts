@@ -21,7 +21,6 @@ export async function POST(request: NextRequest) {
     create: {
       phone,
       role: intent,
-      name: intent === "provider" ? "Setu Provider" : "Setu Customer",
       preferredLang: "en",
     },
     include: { providerProfile: true },
@@ -31,7 +30,6 @@ export async function POST(request: NextRequest) {
     await db.providerProfile.create({
       data: {
         userId: user.id,
-        displayName: user.name,
         onboardingStatus: "draft",
         serviceIds: [],
         serviceNames: [],

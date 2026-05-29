@@ -11,11 +11,11 @@ import {
   LayoutDashboard,
   ListChecks,
   MessageSquare,
-  RotateCcw,
   Upload,
   User,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { FileUploadPreview } from "@/components/file-upload-preview";
 
 type ActionId = "profile-photo" | "aadhaar-back";
 
@@ -81,15 +81,8 @@ export default function ProviderVerificationStatusPage() {
   );
   const canResubmit = remaining === 0;
 
-  function resolveAction(id: ActionId) {
-    setResolved((current) => ({ ...current, [id]: true }));
-  }
-
   function handleResubmit() {
-    if (!canResubmit) {
-      return;
-    }
-
+    if (!canResubmit) return;
     router.push("/provider/dashboard");
   }
 
@@ -120,7 +113,6 @@ export default function ProviderVerificationStatusPage() {
         </header>
 
         <section className="flex flex-col gap-6 px-4 py-5 min-[390px]:px-5 min-[390px]:py-6">
-          {/* Status summary */}
           <div className="flex flex-col items-center rounded-xl border border-[var(--outline-variant)] bg-[var(--surface-container-low)] p-6 text-center">
             <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--surface-container-high)] text-[var(--on-surface-variant)]">
               <Clock className="h-7 w-7" />
@@ -138,7 +130,6 @@ export default function ProviderVerificationStatusPage() {
             </span>
           </div>
 
-          {/* Action required */}
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-label-lg uppercase tracking-wider text-[var(--on-surface)]">
@@ -165,11 +156,7 @@ export default function ProviderVerificationStatusPage() {
                         : "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--error-container)] text-[var(--on-error-container)]"
                     }
                   >
-                    {isResolved ? (
-                      <Check className="h-5 w-5" />
-                    ) : (
-                      <AlertCircle className="h-5 w-5" />
-                    )}
+                    {isResolved ? <Check className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
                   </span>
 
                   <div className="min-w-0 flex-1">
@@ -177,42 +164,29 @@ export default function ProviderVerificationStatusPage() {
                       {action.title}
                     </h4>
                     <p className="mt-0.5 text-body-sm text-[var(--on-surface-variant)]">
-                      {isResolved
-                        ? "Fix completed. Ready for resubmission."
-                        : action.fix}
+                      {isResolved ? "Fix completed. Ready for resubmission." : action.fix}
                     </p>
-
-                    {!isResolved ? (
-                      <button
-                        className="mt-3 inline-flex min-h-9 items-center gap-2 rounded-md border border-[var(--primary)] px-3 text-label-md text-[var(--primary)]"
-                        onClick={() => resolveAction(action.id)}
-                        type="button"
-                      >
-                        <Icon className="h-4 w-4" />
-                        {action.cta}
-                      </button>
-                    ) : (
-                      <button
-                        className="mt-3 inline-flex min-h-9 items-center gap-2 rounded-md px-1 text-label-md text-[var(--on-surface-variant)]"
-                        onClick={() =>
-                          setResolved((current) => ({
-                            ...current,
-                            [action.id]: false,
-                          }))
-                        }
-                        type="button"
-                      >
-                        <RotateCcw className="h-4 w-4" />
-                        Redo
-                      </button>
-                    )}
+                    <FileUploadPreview
+                      accept="image/*"
+                      className="mt-3 flex flex-col gap-3"
+                      emptyClassName="inline-flex min-h-9 w-fit cursor-pointer items-center gap-2 rounded-md border border-[var(--primary)] px-3 text-label-md text-[var(--primary)]"
+                      icon={Icon}
+                      label={action.cta}
+                      onFilesChange={(files) =>
+                        setResolved((current) => ({
+                          ...current,
+                          [action.id]: files.length > 0,
+                        }))
+                      }
+                      previewClassName="grid grid-cols-2 gap-2"
+                      previewItemClassName="relative min-h-24 overflow-hidden rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]"
+                    />
                   </div>
                 </div>
               );
             })}
           </div>
 
-          {/* What to expect */}
           <div className="flex flex-col gap-3">
             <h3 className="text-label-lg uppercase tracking-wider text-[var(--on-surface)]">
               What to Expect

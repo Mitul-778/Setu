@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
-  BadgeCheck,
   Camera,
   Check,
   ChevronDown,
@@ -20,7 +19,8 @@ import {
   Upload,
   User,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
+import { submitProviderIdentity } from "@/services/provider-identity-service";
 
 const steps = [
   { id: "id", label: "ID", title: "Upload ID", icon: FileImage },
@@ -34,7 +34,7 @@ type StepId = (typeof steps)[number]["id"];
 const stepCopy: Record<StepId, { heading: string; body: string; cta: string }> = {
   id: {
     heading: "Verify your identity",
-    body: "Secure your account and build trust with customers by verifying your ID.",
+    body: "Enter your provider name and upload ID documents to build customer trust.",
     cta: "Continue",
   },
   selfie: {
@@ -58,19 +58,67 @@ export default function ProviderVerifyIdentityPage() {
   const router = useRouter();
   const [activeStep, setActiveStep] = useState<StepId>("id");
   const [phoneOtpSent, setPhoneOtpSent] = useState(false);
+  const [displayName, setDisplayName] = useState("");
+  const [documentType, setDocumentType] = useState("Aadhaar Card");
+  const [documentFront, setDocumentFront] = useState<File | null>(null);
+  const [documentBack, setDocumentBack] = useState<File | null>(null);
+  const [selfie, setSelfie] = useState<File | null>(null);
+  const [phoneNumber, setPhoneNumber] = useState("9876543210");
+  const [serviceArea, setServiceArea] = useState("Indiranagar, Bangalore");
+  const [serviceRadiusKm, setServiceRadiusKm] = useState(10);
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const activeIndex = steps.findIndex((step) => step.id === activeStep);
   const progress = ((activeIndex + 1) / steps.length) * 100;
   const current = stepCopy[activeStep];
   const primaryCta = activeStep === "phone" && !phoneOtpSent ? "Send OTP" : current.cta;
 
-  function goNext() {
+  async function goNext() {
+    setError("");
+
+    if (activeStep === "id") {
+      if (!displayName.trim()) {
+        setError("Provider name is required.");
+        return;
+      }
+
+      if (!documentFront || !documentBack) {
+        setError("Upload both front and back document files.");
+        return;
+      }
+    }
+
+    if (activeStep === "selfie" && !selfie) {
+      setError("Upload a selfie to continue verification.");
+      return;
+    }
+
     if (activeStep === "phone" && !phoneOtpSent) {
       setPhoneOtpSent(true);
       return;
     }
 
     if (activeStep === "area") {
-      router.push("/provider/services");
+      setSubmitting(true);
+
+      try {
+        const result = await submitProviderIdentity({
+          displayName,
+          documentType,
+          documentFront,
+          documentBack,
+          selfie,
+          phoneNumber,
+          serviceArea,
+          serviceRadiusKm,
+        });
+        router.push(result.nextPath);
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : "Could not save identity details.");
+      } finally {
+        setSubmitting(false);
+      }
+
       return;
     }
 
@@ -138,13 +186,38 @@ export default function ProviderVerifyIdentityPage() {
             </p>
           </div>
 
+          {error ? <p className="mt-4 rounded-md bg-[var(--error-container)] px-3 py-2 text-body-sm text-[var(--on-error-container)]">{error}</p> : null}
+
           <div className="mt-6">
-            {activeStep === "id" ? <IdUploadStep /> : null}
-            {activeStep === "selfie" ? <SelfieStep /> : null}
-            {activeStep === "phone" ? (
-              <PhoneStep otpSent={phoneOtpSent} setOtpSent={setPhoneOtpSent} />
+            {activeStep === "id" ? (
+              <IdUploadStep
+                displayName={displayName}
+                documentBack={documentBack}
+                documentFront={documentFront}
+                documentType={documentType}
+                setDisplayName={setDisplayName}
+                setDocumentBack={setDocumentBack}
+                setDocumentFront={setDocumentFront}
+                setDocumentType={setDocumentType}
+              />
             ) : null}
-            {activeStep === "area" ? <ServiceAreaStep /> : null}
+            {activeStep === "selfie" ? <SelfieStep selfie={selfie} setSelfie={setSelfie} /> : null}
+            {activeStep === "phone" ? (
+              <PhoneStep
+                otpSent={phoneOtpSent}
+                phoneNumber={phoneNumber}
+                setOtpSent={setPhoneOtpSent}
+                setPhoneNumber={setPhoneNumber}
+              />
+            ) : null}
+            {activeStep === "area" ? (
+              <ServiceAreaStep
+                serviceArea={serviceArea}
+                serviceRadiusKm={serviceRadiusKm}
+                setServiceArea={setServiceArea}
+                setServiceRadiusKm={setServiceRadiusKm}
+              />
+            ) : null}
           </div>
         </section>
 
@@ -157,11 +230,12 @@ export default function ProviderVerifyIdentityPage() {
               Save Draft
             </button>
             <button
-              className="flex min-h-12 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 text-label-lg text-[var(--on-primary)]"
+              className="flex min-h-12 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 text-label-lg text-[var(--on-primary)] disabled:opacity-60"
+              disabled={submitting}
               onClick={goNext}
               type="button"
             >
-              <span>{primaryCta}</span>
+              <span>{submitting ? "Saving..." : primaryCta}</span>
               {activeStep === "area" ? <Check className="h-5 w-5" /> : <ArrowRight className="h-5 w-5" />}
             </button>
           </div>
@@ -221,13 +295,46 @@ function Stepper({
   );
 }
 
-function IdUploadStep() {
+function IdUploadStep({
+  displayName,
+  documentBack,
+  documentFront,
+  documentType,
+  setDisplayName,
+  setDocumentBack,
+  setDocumentFront,
+  setDocumentType,
+}: {
+  displayName: string;
+  documentBack: File | null;
+  documentFront: File | null;
+  documentType: string;
+  setDisplayName: (value: string) => void;
+  setDocumentBack: (file: File | null) => void;
+  setDocumentFront: (file: File | null) => void;
+  setDocumentType: (value: string) => void;
+}) {
   return (
     <div className="flex flex-col gap-4">
       <label className="flex flex-col gap-1.5">
+        <span className="text-label-md text-[var(--on-surface)]">Provider Name</span>
+        <input
+          className="min-h-12 rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-3 text-body-md outline-none focus:border-[var(--primary)]"
+          onChange={(event) => setDisplayName(event.target.value)}
+          placeholder="Enter your full name"
+          type="text"
+          value={displayName}
+        />
+      </label>
+
+      <label className="flex flex-col gap-1.5">
         <span className="text-label-md text-[var(--on-surface)]">Document Type</span>
         <span className="relative block">
-          <select className="min-h-12 w-full appearance-none rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-3 pr-10 text-body-md outline-none focus:border-[var(--primary)]">
+          <select
+            className="min-h-12 w-full appearance-none rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-3 pr-10 text-body-md outline-none focus:border-[var(--primary)]"
+            onChange={(event) => setDocumentType(event.target.value)}
+            value={documentType}
+          >
             <option>Aadhaar Card</option>
             <option>PAN Card</option>
             <option>Voter ID</option>
@@ -237,8 +344,8 @@ function IdUploadStep() {
         </span>
       </label>
 
-      <UploadBox title="Upload Front" />
-      <UploadBox title="Upload Back" />
+      <UploadBox file={documentFront} onChange={setDocumentFront} title="Upload Front" />
+      <UploadBox file={documentBack} onChange={setDocumentBack} title="Upload Back" />
 
       <TrustNote icon={Lock}>
         Your data is encrypted and used only for verification. We do not share ID documents with customers.
@@ -247,41 +354,100 @@ function IdUploadStep() {
   );
 }
 
-function UploadBox({ title }: { title: string }) {
+function UploadBox({
+  file,
+  onChange,
+  title,
+}: {
+  file: File | null;
+  onChange: (file: File | null) => void;
+  title: string;
+}) {
   return (
-    <button
-      className="flex h-36 flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-4 text-center"
-      type="button"
-    >
-      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--surface-container)] text-[var(--on-surface-variant)]">
-        <Upload className="h-6 w-6" />
-      </span>
+    <label className="flex h-36 cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-4 text-center">
+      <input
+        accept="image/*"
+        className="sr-only"
+        onChange={(event) => onChange(event.target.files?.[0] ?? null)}
+        type="file"
+      />
+      {file?.type.startsWith("image/") ? (
+        <SelectedFilePreview file={file} />
+      ) : (
+        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--surface-container)] text-[var(--on-surface-variant)]">
+          <Upload className="h-6 w-6" />
+        </span>
+      )}
       <span>
         <span className="block text-label-lg text-[var(--on-surface)]">{title}</span>
-        <span className="block text-body-sm text-[var(--on-surface-variant)]">JPEG, PNG up to 5MB</span>
+        <span className="block max-w-[16rem] truncate text-body-sm text-[var(--on-surface-variant)]">
+          {file ? file.name : "JPG or PNG up to 5MB"}
+        </span>
       </span>
-    </button>
+    </label>
   );
 }
 
-function SelfieStep() {
+function SelectedFilePreview({ file }: { file: File }) {
+  const previewUrl = useImagePreviewUrl(file);
+
+  if (!previewUrl) return null;
+
+  return (
+    <span className="h-20 w-20 overflow-hidden rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container)]">
+      <img alt={`Preview of ${file.name}`} className="h-full w-full object-cover grayscale" src={previewUrl} />
+    </span>
+  );
+}
+
+function SelectedSelfiePreview({ file }: { file: File }) {
+  const previewUrl = useImagePreviewUrl(file);
+
+  if (!previewUrl) return null;
+
+  return <img alt="Selfie preview" className="absolute inset-0 h-full w-full object-cover grayscale" src={previewUrl} />;
+}
+
+function useImagePreviewUrl(file: File) {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const nextPreviewUrl = URL.createObjectURL(file);
+    setPreviewUrl(nextPreviewUrl);
+
+    return () => URL.revokeObjectURL(nextPreviewUrl);
+  }, [file]);
+
+  return previewUrl;
+}
+function SelfieStep({ selfie, setSelfie }: { selfie: File | null; setSelfie: (file: File | null) => void }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="relative mx-auto flex aspect-square w-full max-w-[18rem] items-center justify-center overflow-hidden rounded-full border-2 border-[var(--outline-variant)] bg-[var(--surface-container-low)]">
-        <User className="h-32 w-32 text-[var(--surface-container-highest)]" />
+        {selfie?.type.startsWith("image/") ? (
+          <SelectedSelfiePreview file={selfie} />
+        ) : (
+          <User className="h-32 w-32 text-[var(--surface-container-highest)]" />
+        )}
         <div className="absolute left-6 right-6 top-1/2 h-0.5 rounded-full bg-[var(--primary)] shadow-[0_0_12px_rgb(0_0_0_/_0.35)]" />
         <div className="absolute inset-5 rounded-full border border-[var(--outline-variant)]" />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <button className="flex min-h-12 items-center justify-center gap-2 rounded-md border border-[var(--outline)] bg-[var(--surface-container-lowest)] text-label-lg" type="button">
+        <button className="flex min-h-12 items-center justify-center gap-2 rounded-md border border-[var(--outline)] bg-[var(--surface-container-lowest)] text-label-lg" onClick={() => setSelfie(null)} type="button">
           <RotateCcw className="h-5 w-5" />
           Retake
         </button>
-        <button className="flex min-h-12 items-center justify-center gap-2 rounded-md bg-[var(--primary)] text-label-lg text-[var(--on-primary)]" type="button">
+        <label className="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-md bg-[var(--primary)] text-label-lg text-[var(--on-primary)]">
+          <input
+            accept="image/*"
+            className="sr-only"
+            onChange={(event) => setSelfie(event.target.files?.[0] ?? null)}
+            type="file"
+          />
           <Camera className="h-5 w-5" />
-          Verify Face
-        </button>
+          {selfie ? "Selfie Added" : "Upload Selfie"}
+        </label>
       </div>
 
       <div className="rounded-lg bg-[var(--surface-container-low)] p-4">
@@ -298,10 +464,14 @@ function SelfieStep() {
 
 function PhoneStep({
   otpSent,
+  phoneNumber,
   setOtpSent,
+  setPhoneNumber,
 }: {
   otpSent: boolean;
+  phoneNumber: string;
   setOtpSent: (sent: boolean) => void;
+  setPhoneNumber: (value: string) => void;
 }) {
   const otpRefs = useRef<Array<HTMLInputElement | null>>([]);
 
@@ -348,10 +518,11 @@ function PhoneStep({
           </span>
           <input
             className="min-w-0 flex-1 bg-transparent px-3 text-body-lg outline-none placeholder:text-[var(--on-surface-variant)]"
-            defaultValue="98765 43210"
             inputMode="tel"
+            onChange={(event) => setPhoneNumber(event.target.value.replace(/\D/g, "").slice(0, 10))}
             placeholder="Enter mobile number"
             type="tel"
+            value={phoneNumber}
           />
         </div>
       </label>
@@ -422,7 +593,17 @@ function PhoneStep({
     </div>
   );
 }
-function ServiceAreaStep() {
+function ServiceAreaStep({
+  serviceArea,
+  serviceRadiusKm,
+  setServiceArea,
+  setServiceRadiusKm,
+}: {
+  serviceArea: string;
+  serviceRadiusKm: number;
+  setServiceArea: (value: string) => void;
+  setServiceRadiusKm: (value: number) => void;
+}) {
   return (
     <div className="flex flex-col gap-4">
       <div className="overflow-hidden rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]">
@@ -446,17 +627,25 @@ function ServiceAreaStep() {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--on-surface-variant)]" />
             <input
               className="min-h-12 w-full rounded-md border border-[var(--outline-variant)] bg-[var(--surface)] px-10 text-body-md outline-none focus:border-[var(--primary)]"
-              defaultValue="Indiranagar, Bangalore"
+              onChange={(event) => setServiceArea(event.target.value)}
               type="text"
+              value={serviceArea}
             />
           </label>
 
           <div>
             <div className="mb-2 flex items-center justify-between gap-3">
               <label className="text-label-lg text-[var(--on-surface)]">Service Radius</label>
-              <span className="rounded bg-[var(--surface-container)] px-2 py-1 text-label-md text-[var(--on-surface-variant)]">10 km</span>
+              <span className="rounded bg-[var(--surface-container)] px-2 py-1 text-label-md text-[var(--on-surface-variant)]">{serviceRadiusKm} km</span>
             </div>
-            <input className="w-full accent-[var(--primary)]" max="50" min="1" type="range" defaultValue="10" />
+            <input
+              className="w-full accent-[var(--primary)]"
+              max="50"
+              min="1"
+              onChange={(event) => setServiceRadiusKm(Number(event.target.value))}
+              type="range"
+              value={serviceRadiusKm}
+            />
             <div className="mt-1 flex justify-between text-label-sm text-[var(--on-surface-variant)]">
               <span>1 km</span>
               <span>50 km</span>
@@ -466,7 +655,7 @@ function ServiceAreaStep() {
       </div>
 
       <TrustNote icon={Info}>
-        Showing matches for Indiranagar, Bangalore within a 10 km radius. You can update this later.
+        Showing matches for {serviceArea || "your selected area"} within a {serviceRadiusKm} km radius. You can update this later.
       </TrustNote>
     </div>
   );
@@ -476,7 +665,7 @@ function TrustNote({
   children,
   icon: Icon,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   icon: typeof Lock;
 }) {
   return (

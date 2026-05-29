@@ -5,15 +5,14 @@ import {
   CalendarDays,
   Camera,
   Heart,
-  Image as ImageIcon,
   Pencil,
   Share2,
   Sparkles,
   Star,
   User,
   Users,
-  X,
 } from "lucide-react";
+import { FileUploadPreview } from "@/components/file-upload-preview";
 
 const reviewTags = [
   { label: "Professional", selected: true },
@@ -164,23 +163,14 @@ function PhotoUpload() {
   return (
     <section className="flex flex-col gap-3">
       <h2 className="text-label-lg">Photo upload</h2>
-      <div className="no-scrollbar -mx-1 flex gap-3 overflow-x-auto overscroll-x-contain px-1 pb-1">
-        <button className="flex h-24 w-24 shrink-0 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-[var(--on-surface-variant)]">
-          <Camera className="h-6 w-6" />
-          <span className="text-label-sm">Upload</span>
-        </button>
-
-        <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container)]">
-          <div className="absolute inset-0 bg-[linear-gradient(135deg,#ffffff_0%,#dadada_100%)] opacity-70" />
-          <ImageIcon className="relative z-10 h-7 w-7 text-[var(--outline)]" />
-          <button
-            aria-label="Remove photo"
-            className="absolute right-1 top-1 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--surface-container-lowest)]"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </div>
+      <FileUploadPreview
+        accept="image/*"
+        emptyClassName="flex h-24 w-24 shrink-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-[var(--on-surface-variant)]"
+        icon={Camera}
+        label="Upload"
+        multiple
+        previewClassName="no-scrollbar flex gap-3 overflow-x-auto overscroll-x-contain pb-1"
+      />
     </section>
   );
 }
