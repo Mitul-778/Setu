@@ -1,4 +1,4 @@
-﻿import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 
 export const providerDocumentBucket = "provider-documents";
 export const providerPortfolioBucket = "provider-portfolio";
@@ -9,6 +9,14 @@ export type SetuStorageBucket =
   | typeof providerPortfolioBucket
   | typeof customerUploadsBucket;
 
+function normalizeSupabaseUrl(rawUrl: string) {
+  return rawUrl
+    .trim()
+    .replace(/^['"]|['"]$/g, "")
+    .replace(/\/(rest|storage|auth)\/v1\/?$/, "")
+    .replace(/\/+$/, "");
+}
+
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -17,7 +25,7 @@ function getSupabaseAdmin() {
     throw new Error("NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required for uploads.");
   }
 
-  return createClient(supabaseUrl, serviceRoleKey, {
+  return createClient(normalizeSupabaseUrl(supabaseUrl), serviceRoleKey, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
@@ -29,14 +37,18 @@ export async function uploadSetuFile({
   bucket,
   file,
   path,
+  contentType,
 }: {
   bucket: SetuStorageBucket;
   file: Blob | File;
   path: string;
+  contentType?: string;
 }) {
   const supabase = getSupabaseAdmin();
-  const { data, error } = await supabase.storage.from(bucket).upload(path, file, {
+  const fileBody = new Uint8Array(await file.arrayBuffer());
+  const { data, error } = await supabase.storage.from(bucket).upload(path, fileBody, {
     cacheControl: "3600",
+    contentType: (contentType ?? file.type) || "application/octet-stream",
     upsert: true,
   });
 

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -12,20 +13,26 @@ import {
   Info,
   Lock,
   MapPin,
-  Phone,
   RotateCcw,
   Search,
-  ShieldCheck,
   Upload,
   User,
 } from "lucide-react";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { submitProviderIdentity } from "@/services/provider-identity-service";
+
+const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+declare global {
+  interface Window {
+    google?: any;
+    __setuGoogleMapsPromise?: Promise<void>;
+  }
+}
 
 const steps = [
   { id: "id", label: "ID", title: "Upload ID", icon: FileImage },
   { id: "selfie", label: "Selfie", title: "Verify face", icon: Camera },
-  { id: "phone", label: "Phone", title: "Confirm phone", icon: Phone },
   { id: "area", label: "Area", title: "Service area", icon: MapPin },
 ] as const;
 
@@ -42,11 +49,6 @@ const stepCopy: Record<StepId, { heading: string; body: string; cta: string }> =
     body: "We use this to match your face with your ID document.",
     cta: "Verify Face",
   },
-  phone: {
-    heading: "Verify phone number",
-    body: "Confirm the number you will use for customer calls.",
-    cta: "Verify OTP",
-  },
   area: {
     heading: "Set your service area",
     body: "Tell us where you can provide services so we can match you with local customers.",
@@ -57,21 +59,21 @@ const stepCopy: Record<StepId, { heading: string; body: string; cta: string }> =
 export default function ProviderVerifyIdentityPage() {
   const router = useRouter();
   const [activeStep, setActiveStep] = useState<StepId>("id");
-  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [documentType, setDocumentType] = useState("Aadhaar Card");
   const [documentFront, setDocumentFront] = useState<File | null>(null);
   const [documentBack, setDocumentBack] = useState<File | null>(null);
   const [selfie, setSelfie] = useState<File | null>(null);
-  const [phoneNumber, setPhoneNumber] = useState("9876543210");
   const [serviceArea, setServiceArea] = useState("Indiranagar, Bangalore");
   const [serviceRadiusKm, setServiceRadiusKm] = useState(10);
+  const [serviceLat, setServiceLat] = useState(12.9716);
+  const [serviceLng, setServiceLng] = useState(77.5946);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const activeIndex = steps.findIndex((step) => step.id === activeStep);
   const progress = ((activeIndex + 1) / steps.length) * 100;
   const current = stepCopy[activeStep];
-  const primaryCta = activeStep === "phone" && !phoneOtpSent ? "Send OTP" : current.cta;
+  const primaryCta = current.cta;
 
   async function goNext() {
     setError("");
@@ -93,11 +95,6 @@ export default function ProviderVerifyIdentityPage() {
       return;
     }
 
-    if (activeStep === "phone" && !phoneOtpSent) {
-      setPhoneOtpSent(true);
-      return;
-    }
-
     if (activeStep === "area") {
       setSubmitting(true);
 
@@ -108,9 +105,10 @@ export default function ProviderVerifyIdentityPage() {
           documentFront,
           documentBack,
           selfie,
-          phoneNumber,
           serviceArea,
           serviceRadiusKm,
+          serviceLat,
+          serviceLng,
         });
         router.push(result.nextPath);
       } catch (caught) {
@@ -202,19 +200,15 @@ export default function ProviderVerifyIdentityPage() {
               />
             ) : null}
             {activeStep === "selfie" ? <SelfieStep selfie={selfie} setSelfie={setSelfie} /> : null}
-            {activeStep === "phone" ? (
-              <PhoneStep
-                otpSent={phoneOtpSent}
-                phoneNumber={phoneNumber}
-                setOtpSent={setPhoneOtpSent}
-                setPhoneNumber={setPhoneNumber}
-              />
-            ) : null}
             {activeStep === "area" ? (
               <ServiceAreaStep
                 serviceArea={serviceArea}
+                serviceLat={serviceLat}
+                serviceLng={serviceLng}
                 serviceRadiusKm={serviceRadiusKm}
                 setServiceArea={setServiceArea}
+                setServiceLat={setServiceLat}
+                setServiceLng={setServiceLng}
                 setServiceRadiusKm={setServiceRadiusKm}
               />
             ) : null}
@@ -255,7 +249,7 @@ function Stepper({
   return (
     <div className="relative">
       <div className="absolute left-4 right-4 top-4 h-px bg-[var(--surface-container-highest)]" />
-      <div className="relative grid grid-cols-4 gap-1">
+      <div className="relative grid grid-cols-3 gap-1">
         {steps.map(({ id, icon: Icon, label }, index) => {
           const isDone = index < activeIndex;
           const isActive = index === activeIndex;
@@ -364,7 +358,7 @@ function UploadBox({
   title: string;
 }) {
   return (
-    <label className="flex h-36 cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-4 text-center">
+    <label className="relative flex h-36 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-center">
       <input
         accept="image/*"
         className="sr-only"
@@ -374,16 +368,18 @@ function UploadBox({
       {file?.type.startsWith("image/") ? (
         <SelectedFilePreview file={file} />
       ) : (
-        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--surface-container)] text-[var(--on-surface-variant)]">
-          <Upload className="h-6 w-6" />
+        <span className="flex flex-col items-center justify-center gap-3 p-4">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--surface-container)] text-[var(--on-surface-variant)]">
+            <Upload className="h-6 w-6" />
+          </span>
+          <span>
+            <span className="block text-label-lg text-[var(--on-surface)]">{title}</span>
+            <span className="block max-w-[16rem] truncate text-body-sm text-[var(--on-surface-variant)]">
+              JPG or PNG up to 5MB
+            </span>
+          </span>
         </span>
       )}
-      <span>
-        <span className="block text-label-lg text-[var(--on-surface)]">{title}</span>
-        <span className="block max-w-[16rem] truncate text-body-sm text-[var(--on-surface-variant)]">
-          {file ? file.name : "JPG or PNG up to 5MB"}
-        </span>
-      </span>
     </label>
   );
 }
@@ -393,11 +389,7 @@ function SelectedFilePreview({ file }: { file: File }) {
 
   if (!previewUrl) return null;
 
-  return (
-    <span className="h-20 w-20 overflow-hidden rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container)]">
-      <img alt={`Preview of ${file.name}`} className="h-full w-full object-cover grayscale" src={previewUrl} />
-    </span>
-  );
+  return <img alt={`Preview of ${file.name}`} className="absolute inset-0 h-full w-full object-cover grayscale" src={previewUrl} />;
 }
 
 function SelectedSelfiePreview({ file }: { file: File }) {
@@ -409,16 +401,7 @@ function SelectedSelfiePreview({ file }: { file: File }) {
 }
 
 function useImagePreviewUrl(file: File) {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    const nextPreviewUrl = URL.createObjectURL(file);
-    setPreviewUrl(nextPreviewUrl);
-
-    return () => URL.revokeObjectURL(nextPreviewUrl);
-  }, [file]);
-
-  return previewUrl;
+  return useMemo(() => URL.createObjectURL(file), [file]);
 }
 function SelfieStep({ selfie, setSelfie }: { selfie: File | null; setSelfie: (file: File | null) => void }) {
   return (
@@ -462,176 +445,228 @@ function SelfieStep({ selfie, setSelfie }: { selfie: File | null; setSelfie: (fi
   );
 }
 
-function PhoneStep({
-  otpSent,
-  phoneNumber,
-  setOtpSent,
-  setPhoneNumber,
-}: {
-  otpSent: boolean;
-  phoneNumber: string;
-  setOtpSent: (sent: boolean) => void;
-  setPhoneNumber: (value: string) => void;
-}) {
-  const otpRefs = useRef<Array<HTMLInputElement | null>>([]);
-
-  function handleOtpChange(index: number, value: string) {
-    const digit = value.replace(/\D/g, "").slice(-1);
-    const input = otpRefs.current[index];
-
-    if (input) {
-      input.value = digit;
-    }
-
-    if (digit && index < 3) {
-      otpRefs.current[index + 1]?.focus();
-    }
-  }
-
-  function handleOtpKeyDown(index: number, key: string) {
-    if (key === "Backspace" && !otpRefs.current[index]?.value && index > 0) {
-      otpRefs.current[index - 1]?.focus();
-    }
-  }
-
-  function handleOtpPaste(value: string) {
-    const digits = value.replace(/\D/g, "").slice(0, 4).split("");
-
-    digits.forEach((digit, index) => {
-      const input = otpRefs.current[index];
-
-      if (input) {
-        input.value = digit;
-      }
-    });
-
-    otpRefs.current[Math.min(digits.length, 3)]?.focus();
-  }
-
-  return (
-    <div className="flex flex-col gap-5">
-      <label className="flex flex-col gap-1.5">
-        <span className="text-label-md text-[var(--on-surface-variant)]">Mobile Number</span>
-        <div className="flex min-h-12 overflow-hidden rounded-md border border-[var(--outline)] bg-[var(--surface-container-lowest)] focus-within:border-[var(--primary)]">
-          <span className="flex shrink-0 items-center border-r border-[var(--outline-variant)] bg-[var(--surface-container-low)] px-3 text-body-md text-[var(--on-surface)]">
-            +91
-          </span>
-          <input
-            className="min-w-0 flex-1 bg-transparent px-3 text-body-lg outline-none placeholder:text-[var(--on-surface-variant)]"
-            inputMode="tel"
-            onChange={(event) => setPhoneNumber(event.target.value.replace(/\D/g, "").slice(0, 10))}
-            placeholder="Enter mobile number"
-            type="tel"
-            value={phoneNumber}
-          />
-        </div>
-      </label>
-
-      {!otpSent ? (
-        <div className="rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-4">
-          <div className="flex items-start gap-3">
-            <Phone className="mt-0.5 h-5 w-5 shrink-0 text-[var(--primary)]" />
-            <div>
-              <h3 className="text-label-lg text-[var(--on-surface)]">Send OTP to verify</h3>
-              <p className="mt-1 text-body-sm text-[var(--on-surface-variant)]">
-                We will send a 4-digit OTP only after you confirm this mobile number.
-              </p>
-            </div>
-          </div>
-          <button
-            className="mt-4 min-h-11 w-full rounded-md bg-[var(--primary)] px-4 text-label-lg text-[var(--on-primary)]"
-            onClick={() => setOtpSent(true)}
-            type="button"
-          >
-            Send OTP
-          </button>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-label-md text-[var(--on-surface-variant)]">Enter 4-digit OTP</span>
-            <button
-              className="text-label-md text-[var(--primary)]"
-              onClick={() => setOtpSent(false)}
-              type="button"
-            >
-              Change number
-            </button>
-          </div>
-          <div className="grid grid-cols-4 gap-3">
-            {["", "", "", ""].map((_, index) => (
-              <input
-                aria-label={`OTP digit ${index + 1}`}
-                autoComplete={index === 0 ? "one-time-code" : "off"}
-                className="h-14 rounded-md border border-[var(--outline)] bg-[var(--surface-container-lowest)] text-center text-headline-md outline-none focus:border-[var(--primary)]"
-                inputMode="numeric"
-                key={index}
-                maxLength={1}
-                onChange={(event) => handleOtpChange(index, event.target.value)}
-                onKeyDown={(event) => handleOtpKeyDown(index, event.key)}
-                onPaste={(event) => {
-                  event.preventDefault();
-                  handleOtpPaste(event.clipboardData.getData("text"));
-                }}
-                placeholder="0"
-                ref={(input) => {
-                  otpRefs.current[index] = input;
-                }}
-                type="text"
-              />
-            ))}
-          </div>
-          <p className="mt-1 text-body-sm text-[var(--on-surface-variant)]">
-            OTP sent. Resend in <span className="text-label-md text-[var(--on-surface)]">0:45</span>
-          </p>
-        </div>
-      )}
-
-      <TrustNote icon={ShieldCheck}>
-        Verified phone numbers help customers call or message you confidently after booking.
-      </TrustNote>
-    </div>
-  );
-}
 function ServiceAreaStep({
   serviceArea,
+  serviceLat,
+  serviceLng,
   serviceRadiusKm,
   setServiceArea,
+  setServiceLat,
+  setServiceLng,
   setServiceRadiusKm,
 }: {
   serviceArea: string;
+  serviceLat: number;
+  serviceLng: number;
   serviceRadiusKm: number;
   setServiceArea: (value: string) => void;
+  setServiceLat: (value: number) => void;
+  setServiceLng: (value: number) => void;
   setServiceRadiusKm: (value: number) => void;
 }) {
+  const mapRef = useRef<HTMLDivElement | null>(null);
+  const googleMapRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+  const radiusCircleRef = useRef<any>(null);
+  const placesLibraryRef = useRef<any>(null);
+  const [locationQuery, setLocationQuery] = useState(serviceArea);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [mapsReady, setMapsReady] = useState(false);
+  const [mapsError, setMapsError] = useState(false);
+
+  useEffect(() => {
+    if (!googleMapsApiKey || !mapRef.current) return;
+
+    let cancelled = false;
+
+    loadGoogleMapsScript(googleMapsApiKey)
+      .then(async () => {
+        if (cancelled || !window.google || !mapRef.current) return;
+
+        const center = { lat: serviceLat, lng: serviceLng };
+        const map = new window.google.maps.Map(mapRef.current, {
+          center,
+          clickableIcons: false,
+          disableDefaultUI: true,
+          gestureHandling: "greedy",
+          mapTypeControl: false,
+          streetViewControl: false,
+          zoom: 13,
+        });
+        const marker = new window.google.maps.Marker({
+          map,
+          position: center,
+        });
+        const circle = new window.google.maps.Circle({
+          center,
+          clickable: false,
+          fillColor: "#000000",
+          fillOpacity: 0.06,
+          map,
+          radius: serviceRadiusKm * 1000,
+          strokeColor: "#000000",
+          strokeOpacity: 0.4,
+          strokeWeight: 1,
+        });
+        googleMapRef.current = map;
+        markerRef.current = marker;
+        radiusCircleRef.current = circle;
+        setMapsReady(true);
+        fitMapToCircle(circle, map);
+
+        window.google.maps.importLibrary("places")
+          .then((placesLibrary: any) => {
+            placesLibraryRef.current = placesLibrary;
+          })
+          .catch(() => {
+            placesLibraryRef.current = null;
+          });
+      })
+      .catch(() => setMapsError(true));
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!suggestionsOpen || !mapsReady || !placesLibraryRef.current || locationQuery.trim().length < 2) return;
+
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      const center = { lat: serviceLat, lng: serviceLng };
+      const { AutocompleteSuggestion } = placesLibraryRef.current;
+      const response = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
+        input: locationQuery,
+        includedRegionCodes: ["in"],
+        locationBias: { center, radius: serviceRadiusKm * 1000 },
+      }).catch(() => null);
+
+      if (!cancelled) {
+        setSuggestions(response?.suggestions ?? []);
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [locationQuery, mapsReady, serviceLat, serviceLng, serviceRadiusKm, suggestionsOpen]);
+
+  useEffect(() => {
+    const circle = radiusCircleRef.current;
+    const map = googleMapRef.current;
+
+    if (!circle || !map) return;
+
+    circle.setRadius(serviceRadiusKm * 1000);
+    fitMapToCircle(circle, map);
+  }, [serviceRadiusKm]);
+
+  function geocodeTypedLocation() {
+    if (!window.google?.maps?.Geocoder || !googleMapRef.current || !locationQuery.trim()) return;
+
+    const geocoder = new window.google.maps.Geocoder();
+    geocoder.geocode(
+      { address: locationQuery, componentRestrictions: { country: "IN" } },
+      (results: any[], status: string) => {
+        const firstResult = results?.[0];
+        const location = firstResult?.geometry?.location;
+
+        if (status !== "OK" || !location) return;
+
+        const nextCenter = { lat: location.lat(), lng: location.lng() };
+        const nextArea = firstResult.formatted_address || locationQuery;
+
+        markerRef.current?.setPosition(nextCenter);
+        radiusCircleRef.current?.setCenter(nextCenter);
+        fitMapToCircle(radiusCircleRef.current, googleMapRef.current);
+        setLocationQuery(nextArea);
+        setSuggestions([]);
+        setSuggestionsOpen(false);
+        setServiceArea(nextArea);
+        setServiceLat(nextCenter.lat);
+        setServiceLng(nextCenter.lng);
+      },
+    );
+  }
+  async function selectSuggestion(suggestion: any) {
+    const place = suggestion.placePrediction.toPlace();
+    await place.fetchFields({ fields: ["displayName", "formattedAddress", "location"] });
+
+    if (!place.location) return;
+
+    const nextCenter = { lat: place.location.lat(), lng: place.location.lng() };
+    const nextArea = place.formattedAddress || place.displayName || suggestion.placePrediction.text?.text || locationQuery;
+
+    markerRef.current?.setPosition(nextCenter);
+    radiusCircleRef.current?.setCenter(nextCenter);
+    googleMapRef.current?.panTo(nextCenter);
+    fitMapToCircle(radiusCircleRef.current, googleMapRef.current);
+    setLocationQuery(nextArea);
+    setSuggestions([]);
+    setSuggestionsOpen(false);
+    setServiceArea(nextArea);
+    setServiceLat(nextCenter.lat);
+    setServiceLng(nextCenter.lng);
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="overflow-hidden rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]">
-        <div className="relative h-56 overflow-hidden bg-[var(--surface-container)]">
-          <div className="absolute inset-0 opacity-70">
-            <div className="grid h-full grid-cols-6 grid-rows-6 gap-px p-4">
-              {Array.from({ length: 36 }).map((_, index) => (
-                <div className="rounded-sm bg-[var(--surface-container-lowest)]" key={index} />
-              ))}
+        <div className="relative h-64 overflow-hidden bg-[var(--surface-container)]">
+          {googleMapsApiKey && !mapsError ? (
+            <div className="h-full w-full grayscale" ref={mapRef} />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center p-4 text-center text-body-sm text-[var(--on-surface-variant)]">
+              {googleMapsApiKey
+                ? "Google Maps could not load. Check Maps JavaScript API, Places API (New), and key restrictions."
+                : "Add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to enable Google Maps."}
             </div>
-          </div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="flex h-36 w-36 items-center justify-center rounded-full border border-[var(--primary)] bg-black/5">
-              <MapPin className="h-8 w-8 fill-current text-[var(--primary)]" />
-            </div>
-          </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-4 p-4">
-          <label className="relative block">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--on-surface-variant)]" />
-            <input
-              className="min-h-12 w-full rounded-md border border-[var(--outline-variant)] bg-[var(--surface)] px-10 text-body-md outline-none focus:border-[var(--primary)]"
-              onChange={(event) => setServiceArea(event.target.value)}
-              type="text"
-              value={serviceArea}
-            />
-          </label>
+          <div className="relative">
+            <label className="relative block">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--on-surface-variant)]" />
+              <input
+                className="min-h-12 w-full rounded-md border border-[var(--outline-variant)] bg-[var(--surface)] px-10 text-body-md outline-none focus:border-[var(--primary)]"
+                onChange={(event) => {
+                  const nextValue = event.target.value;
+                  setLocationQuery(nextValue);
+                  setServiceArea(nextValue);
+                  setSuggestionsOpen(nextValue.trim().length >= 2);
+                  if (nextValue.trim().length < 2) setSuggestions([]);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    geocodeTypedLocation();
+                  }
+                }}
+
+                placeholder="Search city, area, or landmark"
+                type="text"
+                value={locationQuery}
+              />
+            </label>
+            {suggestionsOpen && suggestions.length ? (
+              <div className="absolute left-0 right-0 top-[calc(100%+0.25rem)] z-50 max-h-56 overflow-y-auto rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] shadow-[0_4px_12px_rgb(0_0_0_/_0.12)]">
+                {suggestions.map((suggestion, index) => (
+                  <button
+                    className="flex min-h-12 w-full items-start border-b border-[var(--surface-container)] px-3 py-2 text-left text-body-sm last:border-b-0"
+                    key={`${suggestion.placePrediction?.placeId ?? index}`}
+                    onClick={() => selectSuggestion(suggestion)}
+                    type="button"
+                  >
+                    {suggestion.placePrediction?.text?.text ?? "Select location"}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
 
           <div>
             <div className="mb-2 flex items-center justify-between gap-3">
@@ -659,6 +694,39 @@ function ServiceAreaStep({
       </TrustNote>
     </div>
   );
+}
+
+function fitMapToCircle(circle: any, map: any) {
+  const bounds = circle?.getBounds?.();
+  if (bounds && map) map.fitBounds(bounds, 28);
+}
+function loadGoogleMapsScript(apiKey: string) {
+  if (window.google?.maps) return Promise.resolve();
+  if (window.__setuGoogleMapsPromise) return window.__setuGoogleMapsPromise;
+
+  window.__setuGoogleMapsPromise = new Promise<void>((resolve, reject) => {
+    const existingScript = document.querySelector<HTMLScriptElement>("script[data-setu-google-maps]");
+
+    if (existingScript) {
+      if (window.google?.maps) {
+        resolve();
+        return;
+      }
+      existingScript.addEventListener("load", () => resolve(), { once: true });
+      existingScript.addEventListener("error", () => reject(new Error("Google Maps failed to load.")), { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.async = true;
+    script.dataset.setuGoogleMaps = "true";
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&v=weekly&libraries=places`;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Google Maps failed to load."));
+    document.head.appendChild(script);
+  });
+
+  return window.__setuGoogleMapsPromise;
 }
 
 function TrustNote({

@@ -18,10 +18,40 @@ function asImageFile(value: FormDataEntryValue | null) {
 }
 
 function safeFileName(name: string) {
-  return name.toLowerCase().replace(/[^a-z0-9.]+/g, "-").replace(/^-|-$/g, "");
+  const safeName = name.toLowerCase().replace(/[^a-z0-9.]+/g, "-").replace(/^-|-$/g, "");
+  return safeName || "upload.jpg";
+}
+
+function inferCityFromServiceArea(serviceArea: string) {
+  const parts = serviceArea.split(",").map((part) => part.trim()).filter(Boolean);
+  if (parts.length >= 3) return parts[1];
+  return parts[0];
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  return "Unknown server error";
 }
 
 export async function POST(request: NextRequest) {
+  try {
+    return await saveProviderIdentity(request);
+  } catch (error) {
+    const detail = getErrorMessage(error);
+    console.error("Provider identity save failed", error);
+
+    return NextResponse.json(
+      {
+        error: "Could not save identity details.",
+        detail: process.env.NODE_ENV === "production" ? undefined : detail,
+      },
+      { status: 500 },
+    );
+  }
+}
+
+async function saveProviderIdentity(request: NextRequest) {
   const userId = request.cookies.get("setu_user_id")?.value;
 
   if (!userId) {
@@ -33,6 +63,8 @@ export async function POST(request: NextRequest) {
   const documentType = asString(formData.get("documentType")) || "Aadhaar Card";
   const serviceArea = asString(formData.get("serviceArea"));
   const serviceRadiusKm = Number(asString(formData.get("serviceRadiusKm")) || 10);
+  const serviceLat = Number(asString(formData.get("serviceLat")));
+  const serviceLng = Number(asString(formData.get("serviceLng")));
 
   if (!displayName) {
     return NextResponse.json({ error: "Provider name is required." }, { status: 400 });
@@ -68,8 +100,10 @@ export async function POST(request: NextRequest) {
     data: {
       displayName,
       area: serviceArea || provider.area,
-      city: serviceArea ? "Bangalore" : provider.city,
+      city: serviceArea ? inferCityFromServiceArea(serviceArea) : provider.city,
       serviceRadiusKm: Number.isFinite(serviceRadiusKm) ? serviceRadiusKm : provider.serviceRadiusKm,
+      lat: Number.isFinite(serviceLat) ? serviceLat : provider.lat,
+      lng: Number.isFinite(serviceLng) ? serviceLng : provider.lng,
     },
   });
 
@@ -93,6 +127,7 @@ export async function POST(request: NextRequest) {
       bucket: providerDocumentBucket,
       file,
       path: `providers/${provider.id}/identity/${Date.now()}-${item.type}-${safeFileName(file.name)}`,
+      contentType: file.type || "image/jpeg",
     });
 
     const uploadedFile = await db.uploadedFile.create({

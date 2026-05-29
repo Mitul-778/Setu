@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -24,6 +26,7 @@ import {
   type ProviderServiceId,
 } from "@/lib/provider-profile-draft";
 import { useProviderProfileDraft } from "@/lib/use-provider-profile-draft";
+import { loadProviderServices, saveProviderServices } from "@/services/provider-services-service";
 
 const serviceIcons = {
   mehendi: Brush,
@@ -34,11 +37,51 @@ const serviceIcons = {
   tutor: GraduationCap,
 } satisfies Record<ProviderServiceId, typeof Brush>;
 
+type SavingAction = "draft" | "continue" | null;
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Something went wrong.";
+}
+
 export default function ProviderServicesPage() {
+  const router = useRouter();
   const { draft, updateDraft, updateStructuredDraft } = useProviderProfileDraft();
+  const [isLoading, setIsLoading] = useState(true);
+  const [savingAction, setSavingAction] = useState<SavingAction>(null);
+  const [error, setError] = useState("");
+
   const selectedServices = draft.serviceIds;
   const selectedLanguages = draft.languages;
   const experience = draft.experienceLevel;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    loadProviderServices()
+      .then((data) => {
+        if (cancelled) return;
+        updateDraft({
+          serviceIds: data.serviceIds,
+          languages: data.languages,
+          experienceLevel: data.experienceLevel,
+          bio: data.bio,
+          translatedBio: data.translatedBio,
+          serviceNames: data.serviceNames,
+        });
+        setError("");
+      })
+      .catch((loadError) => {
+        if (cancelled) return;
+        setError(getErrorMessage(loadError));
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function toggleService(id: ProviderServiceId) {
     const nextServices = selectedServices.includes(id)
@@ -85,6 +128,40 @@ export default function ProviderServicesPage() {
     updateDraft({ serviceNames: nextNames.length ? nextNames : ["New service"] });
   }
 
+  async function persistServices(action: Exclude<SavingAction, null>) {
+    setSavingAction(action);
+    setError("");
+
+    try {
+      const saved = await saveProviderServices({
+        serviceIds: draft.serviceIds,
+        languages: draft.languages,
+        experienceLevel: draft.experienceLevel,
+        bio: draft.bio,
+        translatedBio: draft.translatedBio,
+        serviceNames: draft.serviceNames,
+      });
+
+      updateDraft({
+        serviceIds: saved.serviceIds,
+        languages: saved.languages,
+        experienceLevel: saved.experienceLevel,
+        bio: saved.bio,
+        translatedBio: saved.translatedBio,
+        serviceNames: saved.serviceNames,
+      });
+
+      if (action === "continue") {
+        router.push("/provider/showcase");
+      }
+    } catch (saveError) {
+      setError(getErrorMessage(saveError));
+    } finally {
+      setSavingAction(null);
+    }
+  }
+
+  const isBusy = isLoading || savingAction !== null;
 
   return (
     <main className="min-h-dvh overflow-x-hidden bg-black text-[var(--on-surface)]">
@@ -94,6 +171,7 @@ export default function ProviderServicesPage() {
             <button
               aria-label="Go back"
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[var(--on-surface)]"
+              onClick={() => router.back()}
               type="button"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -138,6 +216,18 @@ export default function ProviderServicesPage() {
             </p>
           </div>
 
+          {isLoading ? (
+            <div className="mt-4 rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-low)] px-3 py-2 text-body-sm text-[var(--on-surface-variant)]">
+              Loading saved provider details...
+            </div>
+          ) : null}
+
+          {error ? (
+            <div className="mt-4 rounded-md border border-[var(--error)] bg-[var(--error-container)] px-3 py-2 text-body-sm text-[var(--on-error-container)]">
+              {error}
+            </div>
+          ) : null}
+
           <section className="mt-6 grid grid-cols-2 gap-3" aria-label="Service categories">
             {providerServiceOptions.map(({ id, label }) => {
               const selected = selectedServices.includes(id);
@@ -150,6 +240,7 @@ export default function ProviderServicesPage() {
                       ? "relative flex min-h-28 flex-col items-center justify-center gap-2 rounded-lg border-2 border-[var(--primary)] bg-[var(--surface-container-lowest)] p-3 text-center text-[var(--on-surface)]"
                       : "relative flex min-h-28 flex-col items-center justify-center gap-2 rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-3 text-center text-[var(--on-surface)]"
                   }
+                  disabled={isBusy}
                   key={id}
                   onClick={() => toggleService(id)}
                   type="button"
@@ -186,6 +277,7 @@ export default function ProviderServicesPage() {
                         ? "min-h-9 rounded-full border border-[var(--primary)] bg-[var(--primary)] px-4 text-label-md text-[var(--on-primary)]"
                         : "min-h-9 rounded-full border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-4 text-label-md text-[var(--on-surface)]"
                     }
+                    disabled={isBusy}
                     key={language}
                     onClick={() => toggleLanguage(language)}
                     type="button"
@@ -212,6 +304,7 @@ export default function ProviderServicesPage() {
                         ? "flex min-h-16 items-center gap-3 rounded-lg border-2 border-[var(--primary)] bg-[var(--surface-container-lowest)] p-3 text-left"
                         : "flex min-h-16 items-center gap-3 rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-3 text-left"
                     }
+                    disabled={isBusy}
                     key={id}
                     onClick={() => selectExperience(id)}
                     type="button"
@@ -246,7 +339,7 @@ export default function ProviderServicesPage() {
                   Profile Details
                 </h3>
                 <p className="mt-1 text-body-sm text-[var(--on-surface-variant)]">
-Fill manually here, or use Setu AI to draft the same profile details.
+                  Fill manually here, or use Setu AI to draft the same profile details.
                 </p>
               </div>
               <Link
@@ -262,6 +355,7 @@ Fill manually here, or use Setu AI to draft the same profile details.
               <span className="text-label-md text-[var(--on-surface)]">Profile Bio</span>
               <textarea
                 className="mt-1 min-h-28 w-full resize-none rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-3 text-body-md outline-none placeholder:text-[var(--on-surface-variant)] focus:border-[var(--primary)]"
+                disabled={isBusy}
                 onChange={(event) => updateDraft({ bio: event.target.value })}
                 value={draft.bio}
               />
@@ -271,7 +365,8 @@ Fill manually here, or use Setu AI to draft the same profile details.
               <div className="mb-2 flex items-center justify-between gap-3">
                 <h4 className="text-label-lg text-[var(--on-surface)]">Service Names</h4>
                 <button
-                  className="flex min-h-8 items-center gap-1 rounded-full border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-3 text-label-md"
+                  className="flex min-h-8 items-center gap-1 rounded-full border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-3 text-label-md disabled:opacity-60"
+                  disabled={isBusy}
                   onClick={addServiceName}
                   type="button"
                 >
@@ -283,13 +378,15 @@ Fill manually here, or use Setu AI to draft the same profile details.
                 {draft.serviceNames.map((name, index) => (
                   <div className="flex gap-2" key={`${name}-${index}`}>
                     <input
-                      className="min-h-11 min-w-0 flex-1 rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-3 text-body-md outline-none focus:border-[var(--primary)]"
+                      className="min-h-11 min-w-0 flex-1 rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-3 text-body-md outline-none focus:border-[var(--primary)] disabled:opacity-60"
+                      disabled={isBusy}
                       onChange={(event) => updateServiceName(index, event.target.value)}
                       value={name}
                     />
                     <button
                       aria-label="Remove service name"
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]"
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] disabled:opacity-60"
+                      disabled={isBusy}
                       onClick={() => removeServiceName(index)}
                       type="button"
                     >
@@ -299,14 +396,13 @@ Fill manually here, or use Setu AI to draft the same profile details.
                 ))}
               </div>
             </div>
-
           </section>
 
           <section className="mt-6 rounded-lg border border-[var(--surface-variant)] bg-[var(--surface-container-low)] p-3">
             <div className="flex items-start gap-3">
               <Info className="mt-0.5 h-5 w-5 shrink-0 text-[var(--on-surface-variant)]" />
               <p className="text-body-sm text-[var(--on-surface-variant)]">
-Manual and AI flows save profile details here. Pricing and packages are handled in Service Settings.
+                Manual and AI flows save profile details here. Pricing and packages are handled in Service Settings.
               </p>
             </div>
           </section>
@@ -315,18 +411,22 @@ Manual and AI flows save profile details here. Pricing and packages are handled 
         <footer className="fixed bottom-0 left-1/2 z-50 w-full max-w-[480px] -translate-x-1/2 border-t border-[var(--outline-variant)] bg-[var(--surface)] px-4 py-3">
           <div className="grid grid-cols-[1fr_1.35fr] gap-3">
             <button
-              className="min-h-12 rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-4 text-label-lg text-[var(--on-surface-variant)]"
+              className="min-h-12 rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-4 text-label-lg text-[var(--on-surface-variant)] disabled:opacity-60"
+              disabled={isBusy}
+              onClick={() => persistServices("draft")}
               type="button"
             >
-              Save Draft
+              {savingAction === "draft" ? "Saving..." : "Save Draft"}
             </button>
-            <Link
-              className="flex min-h-12 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 text-label-lg text-[var(--on-primary)]"
-              href="/provider/showcase"
+            <button
+              className="flex min-h-12 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 text-label-lg text-[var(--on-primary)] disabled:opacity-60"
+              disabled={isBusy}
+              onClick={() => persistServices("continue")}
+              type="button"
             >
-              <span>Continue</span>
+              <span>{savingAction === "continue" ? "Saving..." : "Continue"}</span>
               <ArrowRight className="h-5 w-5" />
-            </Link>
+            </button>
           </div>
         </footer>
       </div>
