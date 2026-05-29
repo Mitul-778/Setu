@@ -1,6 +1,7 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -13,9 +14,9 @@ import {
   Verified,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { sendLoginOtp, verifyLoginOtp, type AuthIntent, type OtpChannel } from "@/services/auth-service";
 
 type AuthMode = "login" | "otp";
-type AuthIntent = "customer" | "provider";
 
 export function AuthFlow({ mode }: { mode: AuthMode }) {
   return (
@@ -50,15 +51,33 @@ function AuthHeader() {
 }
 
 function LoginScreen() {
+  const router = useRouter();
   const [whatsAppUpdates, setWhatsAppUpdates] = useState(true);
-  const [intent, setIntent] = useState<AuthIntent>("customer");
-  const verifyOtpHref = `/verify-otp?intent=${intent}`;
+  const [intent] = useState<AuthIntent>(() => readAuthIntent());
+  const [phone, setPhone] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    const nextIntent = readAuthIntent();
-    setIntent(nextIntent);
-    window.sessionStorage.setItem("setu.authIntent", nextIntent);
-  }, []);
+    window.sessionStorage.setItem("setu.authIntent", intent);
+  }, [intent]);
+
+  async function requestOtp() {
+    setSubmitting(true);
+    setError("");
+
+    try {
+      const data = await sendLoginOtp({ phone, intent, channel: whatsAppUpdates ? "whatsapp" : "sms" });
+
+      window.sessionStorage.setItem("setu.authIntent", intent);
+      window.sessionStorage.setItem("setu.pendingPhone", data.maskedPhone);
+      router.push(`/verify-otp?intent=${intent}`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not send OTP.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <section className="flex min-h-0 flex-1 flex-col px-4 pb-6 pt-10 min-[390px]:px-5">
@@ -88,8 +107,10 @@ function LoginScreen() {
             id="phone"
             inputMode="tel"
             maxLength={10}
+            onChange={(event) => setPhone(event.target.value.replace(/\D/g, "").slice(0, 10))}
             placeholder="Enter your mobile number"
             type="tel"
+            value={phone}
           />
         </div>
 
@@ -112,15 +133,19 @@ function LoginScreen() {
           />
           <span>Receive updates on WhatsApp</span>
         </label>
+
+        {error ? <p className="text-body-sm text-[var(--error)]">{error}</p> : null}
       </div>
 
       <div className="mt-auto flex flex-col gap-4">
-        <Link
-          className="flex min-h-12 items-center justify-center rounded-md bg-[var(--primary)] text-label-lg text-[var(--on-primary)]"
-          href={verifyOtpHref}
+        <button
+          className="flex min-h-12 items-center justify-center rounded-md bg-[var(--primary)] text-label-lg text-[var(--on-primary)] disabled:opacity-60"
+          disabled={submitting}
+          onClick={requestOtp}
+          type="button"
         >
-          Get OTP
-        </Link>
+          {submitting ? "Sending..." : "Get OTP"}
+        </button>
 
         <TrustNote text="Your number is safe with us. We use secure encrypted login." />
       </div>
@@ -129,17 +154,18 @@ function LoginScreen() {
 }
 
 function VerifyOtpScreen() {
+  const router = useRouter();
   const [secondsLeft, setSecondsLeft] = useState(29);
-  const [intent, setIntent] = useState<AuthIntent>("customer");
+  const [intent] = useState<AuthIntent>(() => readAuthIntent());
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [pendingPhone] = useState(() => readPendingPhone());
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
-  const nextHref = intent === "provider" ? "/provider" : "/permissions";
 
   useEffect(() => {
-    const nextIntent = readAuthIntent();
-    setIntent(nextIntent);
-    window.sessionStorage.setItem("setu.authIntent", nextIntent);
-  }, []);
+    window.sessionStorage.setItem("setu.authIntent", intent);
+  }, [intent]);
 
   useEffect(() => {
     if (secondsLeft <= 0) return;
@@ -178,6 +204,34 @@ function VerifyOtpScreen() {
     inputRefs.current[Math.min(digits.length, 6) - 1]?.focus();
   }
 
+  async function verifyOtp() {
+    setSubmitting(true);
+    setError("");
+
+    try {
+      const data = await verifyLoginOtp(otp.join(""));
+
+      window.sessionStorage.setItem("setu.userRole", data.role);
+      router.push(data.nextPath);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not verify OTP.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function resendOtp(channel: OtpChannel) {
+    setError("");
+    setSecondsLeft(29);
+    const phone = window.sessionStorage.getItem("setu.pendingPhone") ?? pendingPhone;
+
+    try {
+      await sendLoginOtp({ phone, intent, channel });
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not send OTP.");
+    }
+  }
+
   return (
     <section className="flex min-h-0 flex-1 flex-col px-4 pb-6 pt-10 min-[390px]:px-5">
       <div>
@@ -187,7 +241,7 @@ function VerifyOtpScreen() {
         <p className="mt-2 max-w-[20rem] text-body-md text-[var(--on-surface-variant)]">
           Enter the 6-digit code sent to:{" "}
           <span className="font-semibold text-[var(--on-surface)]">
-            +91 98765 43210
+            {pendingPhone}
           </span>
         </p>
       </div>
@@ -215,6 +269,8 @@ function VerifyOtpScreen() {
         ))}
       </div>
 
+      {error ? <p className="mt-4 text-body-sm text-[var(--error)]">{error}</p> : null}
+
       <div className="mt-5 flex justify-center">
         <div className="flex items-center gap-1.5 text-body-sm text-[var(--on-surface-variant)]">
           <Timer className="h-4 w-4" />
@@ -228,11 +284,19 @@ function VerifyOtpScreen() {
       </div>
 
       <div className="mt-8 flex flex-col gap-3">
-        <button className="flex min-h-12 items-center justify-center gap-2 rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-label-lg">
+        <button
+          className="flex min-h-12 items-center justify-center gap-2 rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-label-lg"
+          onClick={() => resendOtp("sms")}
+          type="button"
+        >
           <MessageSquare className="h-5 w-5 text-[var(--on-surface-variant)]" />
           <span>Resend via SMS</span>
         </button>
-        <button className="flex min-h-12 items-center justify-center gap-2 rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-label-lg">
+        <button
+          className="flex min-h-12 items-center justify-center gap-2 rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-label-lg"
+          onClick={() => resendOtp("whatsapp")}
+          type="button"
+        >
           <Smartphone className="h-5 w-5 text-[var(--on-surface-variant)]" />
           <span>Get code on WhatsApp</span>
         </button>
@@ -244,12 +308,14 @@ function VerifyOtpScreen() {
           <span>Secure Login</span>
         </div>
 
-        <Link
-          className="flex min-h-12 items-center justify-center rounded-md bg-[var(--primary)] text-label-lg text-[var(--on-primary)]"
-          href={nextHref}
+        <button
+          className="flex min-h-12 items-center justify-center rounded-md bg-[var(--primary)] text-label-lg text-[var(--on-primary)] disabled:opacity-60"
+          disabled={submitting || otp.some((digit) => !digit)}
+          onClick={verifyOtp}
+          type="button"
         >
-          Verify & Continue
-        </Link>
+          {submitting ? "Verifying..." : "Verify & Continue"}
+        </button>
       </div>
     </section>
   );
@@ -265,6 +331,10 @@ function TrustNote({ text }: { text: string }) {
 }
 
 function readAuthIntent(): AuthIntent {
+  if (typeof window === "undefined") {
+    return "customer";
+  }
+
   const params = new URLSearchParams(window.location.search);
   const fromUrl = params.get("intent");
 
@@ -273,4 +343,12 @@ function readAuthIntent(): AuthIntent {
   }
 
   return window.sessionStorage.getItem("setu.authIntent") === "provider" ? "provider" : "customer";
+}
+
+function readPendingPhone() {
+  if (typeof window === "undefined") {
+    return "+91 98765 43210";
+  }
+
+  return window.sessionStorage.getItem("setu.pendingPhone") ?? "+91 98765 43210";
 }
