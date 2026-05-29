@@ -320,13 +320,13 @@ Manual and AI flows save profile details here. Pricing and packages are handled 
             >
               Save Draft
             </button>
-            <button
+            <Link
               className="flex min-h-12 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 text-label-lg text-[var(--on-primary)]"
-              type="button"
+              href="/provider/showcase"
             >
               <span>Continue</span>
               <ArrowRight className="h-5 w-5" />
-            </button>
+            </Link>
           </div>
         </footer>
       </div>

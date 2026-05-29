@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   ArrowRight,
   BadgeCheck,
@@ -106,10 +107,13 @@ export default function ProviderOnboardingPage() {
         </section>
 
         <div className="mt-auto flex flex-col gap-3 pt-8">
-          <button className="flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 text-label-lg text-[var(--on-primary)]">
+          <Link
+            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 text-label-lg text-[var(--on-primary)]"
+            href="/provider/verify-identity"
+          >
             <span>Start Onboarding</span>
             <ArrowRight className="h-5 w-5" />
-          </button>
+          </Link>
           <button className="min-h-12 w-full rounded-md border border-[var(--primary)] bg-transparent px-4 text-label-lg text-[var(--primary)]">
             Learn how it works
           </button>

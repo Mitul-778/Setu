@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   ArrowLeft,
   ArrowRight,
@@ -16,8 +17,8 @@ import {
 const photoSlots = ["Bridal design", "Kitchen setup", "Event work"];
 
 const serviceMenu = [
-  { name: "Basic service", price: "₹799", note: "Good for small requests" },
-  { name: "Premium package", price: "₹2,000", note: "Includes materials and travel" },
+  { name: "Basic service", price: "â‚¹799", note: "Good for small requests" },
+  { name: "Premium package", price: "â‚¹2,000", note: "Includes materials and travel" },
 ];
 
 const testimonials = [
@@ -256,13 +257,13 @@ export default function ProviderShowcasePage() {
             >
               Save Draft
             </button>
-            <button
+            <Link
               className="flex min-h-12 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 text-label-lg text-[var(--on-primary)]"
-              type="button"
+              href="/provider/service-settings"
             >
               <span>Continue</span>
               <ArrowRight className="h-5 w-5" />
-            </button>
+            </Link>
           </div>
         </footer>
       </div>

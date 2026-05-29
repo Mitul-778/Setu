@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   ArrowLeft,
   Bot,
@@ -206,10 +207,13 @@ export default function ProviderProfileAssistantPage() {
               <RefreshCcw className="h-5 w-5" />
               Regenerate
             </button>
-            <button className="flex min-h-12 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 text-label-lg text-[var(--on-primary)]" type="button">
+            <Link
+              className="flex min-h-12 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 text-label-lg text-[var(--on-primary)]"
+              href="/provider/showcase"
+            >
               <Check className="h-5 w-5" />
               Approve
-            </button>
+            </Link>
           </div>
         </footer>
       </div>

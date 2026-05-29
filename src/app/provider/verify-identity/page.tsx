@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -54,6 +55,7 @@ const stepCopy: Record<StepId, { heading: string; body: string; cta: string }> =
 };
 
 export default function ProviderVerifyIdentityPage() {
+  const router = useRouter();
   const [activeStep, setActiveStep] = useState<StepId>("id");
   const [phoneOtpSent, setPhoneOtpSent] = useState(false);
   const activeIndex = steps.findIndex((step) => step.id === activeStep);
@@ -64,6 +66,11 @@ export default function ProviderVerifyIdentityPage() {
   function goNext() {
     if (activeStep === "phone" && !phoneOtpSent) {
       setPhoneOtpSent(true);
+      return;
+    }
+
+    if (activeStep === "area") {
+      router.push("/provider/services");
       return;
     }
 

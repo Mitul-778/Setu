@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   ArrowLeft,
   ArrowRight,
@@ -15,13 +16,13 @@ const packages = [
   {
     name: "Standard Package",
     description: "Basic service with clear inclusions and travel within radius.",
-    price: "₹799",
+    price: "â‚¹799",
     duration: "90 min",
   },
   {
     name: "Premium Package",
     description: "Priority slot, extended service time, and materials included.",
-    price: "₹2,000",
+    price: "â‚¹2,000",
     duration: "3 hrs",
   },
 ];
@@ -265,13 +266,13 @@ export default function ProviderServiceSettingsPage() {
             >
               Save Draft
             </button>
-            <button
+            <Link
               className="flex min-h-12 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 text-label-lg text-[var(--on-primary)]"
-              type="button"
+              href="/provider/profile-preview"
             >
               <span>Finish Setup</span>
               <ArrowRight className="h-5 w-5" />
-            </button>
+            </Link>
           </div>
         </footer>
       </div>
