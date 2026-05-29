@@ -1,25 +1,59 @@
-// Prisma schema for Trust-First Local Talent Marketplace
+// Prisma schema for Setu marketplace
 
-generator client {
+ generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
+}
+
+enum UserRole {
+  customer
+  provider
+  admin
+}
+
+enum ProviderOnboardingStatus {
+  draft
+  submitted
+  needs_fix
+  approved
+  rejected
+}
+
+enum VerificationItemStatus {
+  pending
+  approved
+  needs_fix
+  rejected
+}
+
+enum UploadedFilePurpose {
+  provider_id_document
+  provider_selfie
+  provider_portfolio
+  provider_certificate
+  provider_fssai
+  provider_intro_video
+  customer_request_photo
+  chat_attachment
 }
 
 model User {
-  id              String   @id @default(cuid())
-  role            String   // "customer" | "provider" | "admin"
-  phone           String   @unique
-  name            String
-  email           String?
-  preferredLang   String   @default("en")
-  city            String?
-  createdAt       DateTime @default(now())
+  id            String   @id @default(cuid())
+  role          UserRole
+  phone         String   @unique
+  name          String?
+  email         String?
+  preferredLang String  @default("en")
+  city          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  provider        ProviderProfile?
+  providerProfile ProviderProfile?
+  uploadedFiles   UploadedFile[]
 }
 
 model ProviderProfile {
@@ -27,84 +61,186 @@ model ProviderProfile {
   userId          String   @unique
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  category        String
+  displayName     String?
+  headline        String?
   bio             String   @default("")
-  languages       String   @default("[]") // JSON array of ISO codes
-  serviceRadiusKm Int      @default(5)
-  priceMin        Int      @default(0)
-  priceMax        Int      @default(0)
-  currency        String   @default("INR")
+  translatedBio   String?
+  category        String?
+  serviceIds      Json     @default("[]")
+  serviceNames    Json     @default("[]")
+  languages       Json     @default("[]")
+  experienceLevel String?
+  yearsExperience Int?
 
   city            String?
   area            String?
+  neighborhood    String?
+  serviceRadiusKm Int      @default(5)
   lat             Float?
   lng             Float?
 
-  upiId           String?
-  voiceBioUrl     String?
-
-  onboardingStatus String  @default("draft") // draft | submitted | verified | rejected
-  trustScore      Int      @default(0)
-  submittedAt     DateTime?
-  verifiedAt      DateTime?
+  onboardingStatus ProviderOnboardingStatus @default(draft)
+  trustScore        Int      @default(0)
+  submittedAt       DateTime?
+  approvedAt        DateTime?
+  rejectedAt        DateTime?
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  verifications   ProviderVerification[]
-  portfolio       PortfolioItem[]
-  services        Service[]
-  availability    AvailabilitySlot[]
+  services         ProviderService[]
+  packages         ProviderPackage[]
+  documents        ProviderDocument[]
+  portfolio        PortfolioItem[]
+  uploadedFiles    UploadedFile[]
+  settings         ProviderServiceSettings?
+  availability     AvailabilitySlot[]
+  verification     ProviderVerificationStatus?
+
+  @@index([onboardingStatus])
+  @@index([city, area])
 }
 
-model ProviderVerification {
-  id              String   @id @default(cuid())
-  providerId      String
-  provider        ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+model ProviderService {
+  id          String   @id @default(cuid())
+  providerId  String
+  provider    ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
-  kind            String   // "id" | "reference" | "social" | "portfolio"
-  status          String   @default("pending") // pending | approved | rejected
-  label           String
-  value           String?
-  adminNotes      String?
-  decidedAt       DateTime?
+  categoryId  String
+  name        String
+  description String @default("")
+  active      Boolean @default(true)
 
-  createdAt       DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([providerId])
+  @@index([categoryId])
 }
 
-model PortfolioItem {
-  id              String   @id @default(cuid())
-  providerId      String
-  provider        ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+model ProviderPackage {
+  id          String   @id @default(cuid())
+  providerId  String
+  provider    ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
-  type            String   @default("image") // image | menu | screenshot | video
-  mediaUrl        String
-  caption         String?
-  verified        Boolean  @default(false)
+  name        String
+  description String @default("")
+  priceInr    Int
+  durationMin Int?
+  active      Boolean @default(true)
 
-  createdAt       DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([providerId])
 }
 
-model Service {
-  id              String   @id @default(cuid())
-  providerId      String
-  provider        ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+model ProviderServiceSettings {
+  id                  String   @id @default(cuid())
+  providerId          String   @unique
+  provider            ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
-  name            String
-  category        String
-  mode            String   @default("onsite")
-  startingPrice   Int
-  trialAvailable  Boolean  @default(false)
-  trialPrice      Int?
-  description     String   @default("")
+  customQuoteEnabled  Boolean @default(true)
+  travelRadiusKm      Int     @default(10)
+  neighborhoods       Json    @default("[]")
+  blackoutDates       Json    @default("[]")
+  weekendSurchargePct Int     @default(0)
+  holidaySurchargePct Int     @default(0)
+  acceptsCalls        Boolean @default(true)
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }
 
 model AvailabilitySlot {
-  id              String   @id @default(cuid())
-  providerId      String
-  provider        ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  id          String   @id @default(cuid())
+  providerId  String
+  provider    ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
-  weekday         Int      // 0-6 (Sun=0)
-  startTime       String   // "HH:mm"
-  endTime         String
+  weekday     Int
+  startTime   String
+  endTime     String
+  active      Boolean @default(true)
+
+  @@index([providerId, weekday])
+}
+
+model UploadedFile {
+  id          String   @id @default(cuid())
+  ownerUserId String
+  ownerUser   User     @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  providerId  String?
+  provider    ProviderProfile? @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  bucket      String
+  path        String
+  publicUrl   String?
+  mimeType    String?
+  sizeBytes   Int?
+  purpose     UploadedFilePurpose
+
+  createdAt   DateTime @default(now())
+
+  documents   ProviderDocument[]
+  portfolioItems PortfolioItem[]
+
+  @@index([ownerUserId])
+  @@index([providerId])
+  @@unique([bucket, path])
+}
+
+model ProviderDocument {
+  id             String   @id @default(cuid())
+  providerId     String
+  provider       ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  uploadedFileId String?
+  uploadedFile   UploadedFile? @relation(fields: [uploadedFileId], references: [id], onDelete: SetNull)
+
+  type           String
+  label          String
+  status         VerificationItemStatus @default(pending)
+  requiredFix    String?
+  adminNotes     String?
+  reviewedAt     DateTime?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([providerId])
+  @@index([status])
+}
+
+model PortfolioItem {
+  id             String   @id @default(cuid())
+  providerId     String
+  provider       ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  uploadedFileId String?
+  uploadedFile   UploadedFile? @relation(fields: [uploadedFileId], references: [id], onDelete: SetNull)
+
+  type           String   @default("image")
+  title          String?
+  caption        String?
+  mediaUrl       String?
+  verified       Boolean  @default(false)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([providerId])
+}
+
+model ProviderVerificationStatus {
+  id                  String   @id @default(cuid())
+  providerId          String   @unique
+  provider            ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  status              ProviderOnboardingStatus @default(draft)
+  expectedReviewHours Int      @default(48)
+  missingItems        Json     @default("[]")
+  submittedAt         DateTime?
+  reviewedAt          DateTime?
+  resubmittedAt       DateTime?
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }

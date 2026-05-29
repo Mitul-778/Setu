@@ -33,8 +33,8 @@ const trustBadges = [
 const onboardingTasks = [
   { label: "Identity Verification", detail: "ID and phone completed", complete: true, href: "/provider/verify-identity" },
   { label: "Services and Bio", detail: "Profile details saved", complete: true, href: "/provider/services" },
-  { label: "Portfolio Photos", detail: "Missing 2 more", complete: false, href: "/provider/showcase" },
-  { label: "Service Settings", detail: "Availability and packages need review", complete: false, href: "/provider/service-settings" },
+  { label: "Portfolio Photos", detail: "Portfolio uploaded", complete: true, href: "/provider/showcase" },
+  { label: "Service Settings", detail: "Availability and packages completed", complete: true, href: "/provider/service-settings" },
 ];
 
 export default function ProviderProfilePreviewPage() {
@@ -104,7 +104,7 @@ export default function ProviderProfilePreviewPage() {
                   <ShieldCheck className="h-4 w-4 shrink-0 fill-current text-[var(--primary)]" />
                 </div>
                 <p className="mt-1 text-body-sm text-[var(--on-surface-variant)]">
-                  {serviceLabels.join(" + ")} • {experienceLabel}
+                  {serviceLabels.join(" + ")} Ã¢â‚¬Â¢ {experienceLabel}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {draft.languages.map((language) => (
@@ -200,10 +200,13 @@ export default function ProviderProfilePreviewPage() {
               Save Draft
             </button>
             {canSubmit ? (
-              <button className="flex min-h-12 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 text-label-lg text-[var(--on-primary)]" type="button">
+              <Link
+                className="flex min-h-12 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 text-label-lg text-[var(--on-primary)]"
+                href="/provider/verification-status"
+              >
                 <Send className="h-5 w-5" />
                 Submit for Review
-              </button>
+              </Link>
             ) : (
               <Link className="flex min-h-12 items-center justify-center rounded-md bg-[var(--primary)] px-4 text-label-lg text-[var(--on-primary)]" href="/provider/showcase">
                 Fix Missing Items
