@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   BellRing,
@@ -19,6 +21,8 @@ import {
   Wrench,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { googleMapsApiKey, loadGoogleMapsScript } from "@/lib/google-maps";
+import { saveCustomerLocation } from "@/services/customer-location-service";
 
 type SetupMode = "permissions" | "location" | "interests";
 
@@ -43,7 +47,15 @@ const permissionItems = [
   },
 ];
 
-const cities = ["Bangalore", "Mumbai", "Delhi NCR", "Hyderabad"];
+// Tier-1 metro cities with their coordinates, saved to the DB on selection.
+const cities = [
+  { name: "Bangalore", lat: 12.9716, lng: 77.5946 },
+  { name: "Mumbai", lat: 19.076, lng: 72.8777 },
+  { name: "Delhi NCR", lat: 28.6139, lng: 77.209 },
+  { name: "Hyderabad", lat: 17.385, lng: 78.4867 },
+  { name: "Chennai", lat: 13.0827, lng: 80.2707 },
+  { name: "Kolkata", lat: 22.5726, lng: 88.3639 },
+];
 
 const neighborhoods = [
   "Indiranagar",
@@ -152,8 +164,100 @@ function PermissionsScreen() {
 }
 
 function LocationScreen() {
+  const router = useRouter();
   const [selectedCity, setSelectedCity] = useState("");
   const [selectedNeighborhood, setSelectedNeighborhood] = useState("");
+  const [query, setQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [location, setLocation] = useState<{ label: string; lat: number; lng: number } | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [placesReady, setPlacesReady] = useState(false);
+  const placesLibraryRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!googleMapsApiKey) return;
+
+    let cancelled = false;
+    loadGoogleMapsScript(googleMapsApiKey)
+      .then(async () => {
+        if (cancelled || !window.google) return;
+        const placesLibrary = await window.google.maps.importLibrary("places").catch(() => null);
+        if (cancelled) return;
+        placesLibraryRef.current = placesLibrary;
+        setPlacesReady(Boolean(placesLibrary));
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!suggestionsOpen || !placesReady || !placesLibraryRef.current || query.trim().length < 2) return;
+
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      const { AutocompleteSuggestion } = placesLibraryRef.current;
+      const response = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
+        input: query,
+        includedRegionCodes: ["in"],
+      }).catch(() => null);
+
+      if (!cancelled) setSuggestions(response?.suggestions ?? []);
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [query, placesReady, suggestionsOpen]);
+
+  async function selectSuggestion(suggestion: any) {
+    const place = suggestion.placePrediction.toPlace();
+    await place.fetchFields({ fields: ["displayName", "formattedAddress", "location"] });
+    if (!place.location) return;
+
+    const label = place.formattedAddress || place.displayName || suggestion.placePrediction.text?.text || query;
+    setQuery(label);
+    setSuggestions([]);
+    setSuggestionsOpen(false);
+    setSelectedCity("");
+    setSelectedNeighborhood("");
+    setLocation({ label, lat: place.location.lat(), lng: place.location.lng() });
+  }
+
+  function selectPopularCity(city: (typeof cities)[number]) {
+    setSelectedCity(city.name);
+    setSelectedNeighborhood("");
+    setQuery("");
+    setSuggestions([]);
+    setSuggestionsOpen(false);
+    setLocation({ label: city.name, lat: city.lat, lng: city.lng });
+  }
+
+  async function handleContinue() {
+    if (!location || saving) return;
+    setSaving(true);
+    setError("");
+
+    try {
+      await saveCustomerLocation({
+        city: location.label,
+        area: selectedNeighborhood || null,
+        lat: location.lat,
+        lng: location.lng,
+      });
+      router.push("/interests");
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Could not save your location.");
+      setSaving(false);
+    }
+  }
+
+  const canContinue = Boolean(location);
 
   return (
     <section className="flex min-h-0 flex-1 flex-col px-4 pb-6 pt-4 min-[390px]:px-5">
@@ -166,15 +270,41 @@ function LocationScreen() {
         </p>
       </div>
 
-      <label className="relative mt-5 block">
-        <span className="sr-only">Select your city</span>
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--outline)]" />
-        <input
-          className="min-h-12 w-full rounded-md border border-[var(--outline-variant)] bg-[var(--surface)] px-10 text-body-md outline-none placeholder:text-[var(--outline)] focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
-          placeholder="Select your city"
-          type="search"
-        />
-      </label>
+      <div className="relative mt-5">
+        <label className="relative block">
+          <span className="sr-only">Select your city</span>
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--outline)]" />
+          <input
+            className="min-h-12 w-full rounded-md border border-[var(--outline-variant)] bg-[var(--surface)] px-10 text-body-md outline-none placeholder:text-[var(--outline)] focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
+            onChange={(event) => {
+              const nextValue = event.target.value;
+              setQuery(nextValue);
+              setSelectedCity("");
+              setLocation(null);
+              setSuggestionsOpen(nextValue.trim().length >= 2);
+              if (nextValue.trim().length < 2) setSuggestions([]);
+            }}
+            placeholder="Select your city"
+            type="search"
+            value={query}
+          />
+        </label>
+        {suggestionsOpen && suggestions.length ? (
+          <div className="absolute left-0 right-0 top-[calc(100%+0.25rem)] z-50 max-h-56 overflow-y-auto rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] shadow-[0_4px_12px_rgb(0_0_0_/_0.12)]">
+            {suggestions.map((suggestion, index) => (
+              <button
+                className="flex min-h-12 w-full items-start gap-2 border-b border-[var(--surface-container)] px-3 py-2 text-left text-body-sm last:border-b-0"
+                key={`${suggestion.placePrediction?.placeId ?? index}`}
+                onClick={() => selectSuggestion(suggestion)}
+                type="button"
+              >
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[var(--outline)]" />
+                {suggestion.placePrediction?.text?.text ?? "Select location"}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
 
       <div className="mt-6">
         <h2 className="text-label-lg text-[var(--on-surface)]">
@@ -185,27 +315,24 @@ function LocationScreen() {
             <button
               className={cn(
                 "flex min-h-12 items-center justify-between rounded-md border px-3 text-left text-body-md",
-                selectedCity === city
+                selectedCity === city.name
                   ? "border-[var(--primary)] bg-[var(--surface-container-low)]"
                   : "border-[var(--outline-variant)] bg-[var(--surface)]"
               )}
-              key={city}
-              onClick={() => {
-                setSelectedCity(city);
-                setSelectedNeighborhood("");
-              }}
+              key={city.name}
+              onClick={() => selectPopularCity(city)}
               type="button"
             >
-              <span>{city}</span>
+              <span>{city.name}</span>
               <span
                 className={cn(
                   "flex h-4 w-4 items-center justify-center rounded-full border",
-                  selectedCity === city
+                  selectedCity === city.name
                     ? "border-[var(--primary)]"
                     : "border-[var(--outline)]"
                 )}
               >
-                {selectedCity === city ? (
+                {selectedCity === city.name ? (
                   <span className="h-2 w-2 rounded-full bg-[var(--primary)]" />
                 ) : null}
               </span>
@@ -251,18 +378,26 @@ function LocationScreen() {
         </div>
       ) : null}
 
+      {error ? (
+        <p className="mt-4 rounded-md border border-[var(--error)] bg-[var(--error-container)] px-3 py-2 text-body-sm text-[var(--on-error-container)]">
+          {error}
+        </p>
+      ) : null}
+
       <div className="mt-auto pt-6">
-        <Link
+        <button
           className={cn(
-            "flex min-h-12 items-center justify-center rounded-md text-label-lg",
-            selectedNeighborhood
+            "flex min-h-12 w-full items-center justify-center rounded-md text-label-lg disabled:cursor-not-allowed",
+            canContinue
               ? "bg-[var(--primary)] text-[var(--on-primary)]"
-              : "pointer-events-none bg-[var(--surface-container-high)] text-[var(--on-surface-variant)] opacity-0"
+              : "bg-[var(--surface-container-high)] text-[var(--on-surface-variant)] opacity-0"
           )}
-          href="/interests"
+          disabled={!canContinue || saving}
+          onClick={handleContinue}
+          type="button"
         >
-          Continue
-        </Link>
+          {saving ? "Saving..." : "Continue"}
+        </button>
       </div>
     </section>
   );
