@@ -124,6 +124,7 @@ async function getCustomerHome() {
       const name = provider.displayName ?? "Provider";
 
       return {
+        id: provider.id,
         name,
         service: provider.category ? serviceLabel(provider.category) : "Service Pro",
         exp: provider.yearsExperience ? `${provider.yearsExperience} yrs` : "New",
@@ -279,6 +280,7 @@ function CategoryChips() {
 }
 
 type Provider = {
+  id?: string;
   name: string;
   service: string;
   exp: string;
@@ -392,9 +394,20 @@ function ProviderCard({
               </p>
               <p className="text-label-lg">{"\u20B9"}{provider.price}</p>
             </div>
-            <button className="min-h-10 shrink-0 rounded-md bg-[var(--primary)] px-4 text-label-md text-[var(--on-primary)]">
-              Book Now
-            </button>
+            <div className="flex shrink-0 items-center gap-2">
+              <Link
+                className="flex min-h-10 items-center justify-center rounded-md border border-[var(--outline)] bg-[var(--surface-container-lowest)] px-4 text-label-md text-[var(--on-surface)]"
+                href={`/customer/trust-passport?providerId=${provider.id ?? ""}`}
+              >
+                View
+              </Link>
+              <Link
+                className="flex min-h-10 items-center justify-center rounded-md bg-[var(--primary)] px-4 text-label-md text-[var(--on-primary)]"
+                href={`/customer/booking?providerId=${provider.id ?? ""}`}
+              >
+                Book Now
+              </Link>
+            </div>
           </div>
         </>
       ) : (

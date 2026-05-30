@@ -1,58 +1,52 @@
- "use client";
+"use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import {
-  CalendarClock,
-  Check,
-  CircleHelp,
-  Clock,
-  Menu,
-  MessageSquare,
-  Phone,
-  Search,
-  ShieldCheck,
-  Star,
-  User,
-  XCircle,
-} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { IndianRupee, MapPin, Menu, Search, ShieldCheck, User } from "lucide-react";
+import { loadCustomerBookings, type CustomerBooking } from "@/services/customer-booking-service";
 
-const tabs = ["Upcoming", "Active", "Completed"];
+const tabs = ["Upcoming", "Active", "Completed"] as const;
 type BookingTab = (typeof tabs)[number];
+const tabBucket: Record<BookingTab, CustomerBooking["bucket"]> = {
+  Upcoming: "upcoming",
+  Active: "active",
+  Completed: "completed",
+};
 
-const timeline = [
-  {
-    title: "Booking confirmed",
-    description: "Today, 09:30 AM",
-    state: "done",
-  },
-  {
-    title: "En route",
-    description: "Arjun has started the journey.",
-    state: "current",
-  },
-  {
-    title: "Service started",
-    description: "Pending OTP verification.",
-    state: "pending",
-  },
-  {
-    title: "Complete",
-    description: "Payment and review after service.",
-    state: "pending",
-  },
-];
-
-const quickActions = [
-  { label: "Call", icon: Phone },
-  { label: "Chat", icon: MessageSquare, href: "/customer/chat-thread" },
-  { label: "Reschedule", icon: CalendarClock },
-  { label: "Cancel", icon: XCircle },
-  { label: "Help", icon: CircleHelp },
-];
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Something went wrong.";
+}
 
 export default function CustomerBookingsPage() {
-  const [activeTab, setActiveTab] = useState<BookingTab>("Active");
+  const [activeTab, setActiveTab] = useState<BookingTab>("Upcoming");
+  const [bookings, setBookings] = useState<CustomerBooking[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    loadCustomerBookings()
+      .then((data) => {
+        if (cancelled) return;
+        setBookings(data.bookings);
+        setError("");
+      })
+      .catch((loadError) => {
+        if (cancelled) return;
+        setError(getErrorMessage(loadError));
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const visible = useMemo(
+    () => bookings.filter((booking) => booking.bucket === tabBucket[activeTab]),
+    [bookings, activeTab],
+  );
 
   return (
     <main className="min-h-dvh overflow-x-hidden bg-black text-[var(--on-surface)]">
@@ -61,9 +55,33 @@ export default function CustomerBookingsPage() {
         <BookingTabs activeTab={activeTab} onChange={setActiveTab} />
 
         <section className="flex min-w-0 flex-col gap-4 px-4 py-4 min-[390px]:px-5">
-          {activeTab === "Upcoming" ? <UpcomingBookings /> : null}
-          {activeTab === "Active" ? <ActiveBookingCard /> : null}
-          {activeTab === "Completed" ? <CompletedBookings /> : null}
+          {isLoading ? (
+            <p className="text-body-sm text-[var(--on-surface-variant)]">Loading your bookings...</p>
+          ) : error ? (
+            <p className="rounded-md border border-[var(--error)] bg-[var(--error-container)] px-3 py-2 text-body-sm text-[var(--on-error-container)]">
+              {error}
+            </p>
+          ) : visible.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-[var(--outline-variant)] bg-[var(--surface-container-low)] p-6 text-center">
+              <p className="text-body-md text-[var(--on-surface)]">No {activeTab.toLowerCase()} bookings.</p>
+              <p className="mt-1 text-body-sm text-[var(--on-surface-variant)]">
+                {activeTab === "Upcoming"
+                  ? "Book a trusted provider to see it here."
+                  : "Bookings will appear here as they progress."}
+              </p>
+              {activeTab === "Upcoming" ? (
+                <Link
+                  className="mt-4 inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--primary)] px-4 text-label-md text-[var(--on-primary)]"
+                  href="/customer"
+                >
+                  Find providers
+                </Link>
+              ) : null}
+            </div>
+          ) : (
+            visible.map((booking) => <BookingCard booking={booking} key={booking.id} />)
+          )}
+
           <SupportNote />
         </section>
       </div>
@@ -78,15 +96,15 @@ function BookingsHeader() {
         <button
           aria-label="Menu"
           className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--on-surface-variant)]"
+          type="button"
         >
           <Menu className="h-5 w-5" />
         </button>
-        <h1 className="truncate text-center text-headline-sm text-[var(--primary)]">
-          Bookings
-        </h1>
+        <h1 className="truncate text-center text-headline-sm text-[var(--primary)]">Bookings</h1>
         <button
           aria-label="Search bookings"
           className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--on-surface-variant)]"
+          type="button"
         >
           <Search className="h-5 w-5" />
         </button>
@@ -95,18 +113,11 @@ function BookingsHeader() {
   );
 }
 
-function BookingTabs({
-  activeTab,
-  onChange,
-}: {
-  activeTab: BookingTab;
-  onChange: (tab: BookingTab) => void;
-}) {
+function BookingTabs({ activeTab, onChange }: { activeTab: BookingTab; onChange: (tab: BookingTab) => void }) {
   return (
     <div className="sticky top-14 z-30 grid grid-cols-3 border-b border-[var(--outline-variant)] bg-[var(--surface)] px-4 min-[390px]:px-5">
       {tabs.map((tab) => {
         const active = tab === activeTab;
-
         return (
           <button
             className={
@@ -126,263 +137,65 @@ function BookingTabs({
   );
 }
 
-function UpcomingBookings() {
+function BookingCard({ booking }: { booking: CustomerBooking }) {
   return (
     <article className="rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-4 shadow-[0_1px_2px_rgb(0_0_0_/_0.04)]">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="truncate text-headline-sm">Priya Sharma</h2>
-          <p className="mt-1 text-body-sm text-[var(--on-surface-variant)]">
-            Bridal Makeup
-          </p>
-        </div>
-        <span className="shrink-0 rounded-full bg-[var(--surface-container-low)] px-3 py-1 text-label-sm">
-          Upcoming
-        </span>
-      </div>
-
-      <div className="mt-4 grid gap-2 rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-low)] p-3">
-        <p className="text-label-lg">Tomorrow, 10:00 AM</p>
-        <p className="text-body-sm text-[var(--on-surface-variant)]">
-          Indiranagar, Bangalore · Token paid {"\u20B9"}300
-        </p>
-      </div>
-
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <button className="min-h-11 rounded-md border border-[var(--outline)] bg-[var(--surface-container-lowest)] px-4 text-label-md">
-          Reschedule
-        </button>
-        <button className="min-h-11 rounded-md bg-[var(--primary)] px-4 text-label-md text-[var(--on-primary)]">
-          View details
-        </button>
-      </div>
-    </article>
-  );
-}
-
-function ActiveBookingCard() {
-  return (
-    <article className="rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-4 shadow-[0_1px_2px_rgb(0_0_0_/_0.04)]">
-      <ProviderHeader />
-      <div className="my-4 h-px bg-[var(--surface-variant)]" />
-      <OtpArrivalBlock />
-      <Timeline />
-      <div className="my-4 h-px bg-[var(--surface-variant)]" />
-      <QuickActions />
-    </article>
-  );
-}
-
-function CompletedBookings() {
-  return (
-    <article className="rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-4 shadow-[0_1px_2px_rgb(0_0_0_/_0.04)]">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="truncate text-headline-sm">Arjun Singh</h2>
-          <p className="mt-1 text-body-sm text-[var(--on-surface-variant)]">
-            Mehendi Artist
-          </p>
-        </div>
-        <span className="shrink-0 rounded-full bg-[var(--surface-container-low)] px-3 py-1 text-label-sm">
-          Completed
-        </span>
-      </div>
-
-      <div className="mt-4 grid gap-2 rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-low)] p-3">
-        <p className="text-label-lg">Completed today, 6:15 PM</p>
-        <p className="text-body-sm text-[var(--on-surface-variant)]">
-          Basic Bridal package · Total paid {"\u20B9"}1,550
-        </p>
-      </div>
-
-      <div className="mt-4 grid grid-cols-[1fr_auto] items-center gap-3">
-        <p className="text-body-sm text-[var(--on-surface-variant)]">
-          Help the community by sharing your experience.
-        </p>
-        <Link
-          className="flex min-h-11 shrink-0 items-center justify-center rounded-md bg-[var(--primary)] px-4 text-label-md text-[var(--on-primary)]"
-          href="/customer/rating-review"
-        >
-          Rate Service
-        </Link>
-      </div>
-    </article>
-  );
-}
-
-function ProviderHeader() {
-  return (
-    <section className="flex items-start justify-between gap-3">
-      <div className="flex min-w-0 items-center gap-3">
-        <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[var(--outline-variant)] bg-[var(--surface-container-high)]">
-          <div className="absolute inset-0 bg-[linear-gradient(135deg,#ffffff_0%,#dadada_100%)]" />
-          <User className="absolute bottom-0.5 h-7 w-7 text-[var(--on-surface-variant)] opacity-45" />
-          <span className="relative z-10 text-label-md">AS</span>
-        </div>
-
-        <div className="min-w-0">
-          <div className="flex min-w-0 items-center gap-1">
-            <h2 className="truncate text-headline-sm">Arjun Singh</h2>
-            <ShieldCheck className="h-3.5 w-3.5 shrink-0 fill-current" />
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[var(--outline-variant)] bg-[var(--surface-container-high)]">
+            <div className="absolute inset-0 bg-[linear-gradient(135deg,#ffffff_0%,#dadada_100%)]" />
+            <User className="absolute bottom-0.5 h-7 w-7 text-[var(--on-surface-variant)] opacity-45" />
+            <span className="relative z-10 text-label-md">{booking.providerInitials}</span>
           </div>
-          <p className="text-body-sm text-[var(--on-surface-variant)]">
-            Mehendi Artist
-          </p>
-          <p className="mt-1 flex items-center gap-1 text-label-sm text-[var(--on-surface-variant)]">
-            <Star className="h-3 w-3 fill-current" />
-            4.8 (120 reviews)
-          </p>
+          <div className="min-w-0">
+            <div className="flex min-w-0 items-center gap-1">
+              <h2 className="truncate text-headline-sm">{booking.providerName}</h2>
+              <ShieldCheck className="h-3.5 w-3.5 shrink-0 fill-current" />
+            </div>
+            <p className="truncate text-body-sm text-[var(--on-surface-variant)]">{booking.service}</p>
+          </div>
         </div>
-      </div>
-
-      <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--secondary-container)] px-3 py-1 text-label-sm text-[var(--on-secondary-container)]">
-        <span className="h-2 w-2 rounded-full bg-[var(--primary)]" />
-        On the way
-      </span>
-    </section>
-  );
-}
-
-function OtpArrivalBlock() {
-  return (
-    <section className="grid gap-3 rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-4">
-      <div className="border-b border-[var(--surface-variant)] pb-3">
-        <p className="text-label-sm uppercase text-[var(--on-surface-variant)]">
-          Booking OTP
-        </p>
-        <div className="mt-2 flex items-center gap-3">
-          <span className="rounded-md bg-[var(--surface-container-low)] px-3 py-2 text-headline-lg tracking-[0.2em]">
-            4821
-          </span>
-        </div>
-        <p className="mt-2 text-body-sm text-[var(--on-surface-variant)]">
-          Share this with Arjun when he arrives.
-        </p>
-      </div>
-
-      <div>
-        <p className="text-label-sm uppercase text-[var(--on-surface-variant)]">
-          Estimated arrival
-        </p>
-        <div className="mt-2 flex items-center gap-2">
-          <Clock className="h-5 w-5 text-[var(--on-surface-variant)]" />
-          <span className="text-headline-md">15 mins</span>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Timeline() {
-  return (
-    <section className="mt-5">
-      <h3 className="mb-3 text-headline-sm">Timeline</h3>
-      <div className="grid gap-0">
-        {timeline.map((step, index) => (
-          <TimelineStep
-            isLast={index === timeline.length - 1}
-            key={step.title}
-            step={step}
-          />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function TimelineStep({
-  isLast,
-  step,
-}: {
-  isLast: boolean;
-  step: (typeof timeline)[number];
-}) {
-  const done = step.state === "done";
-  const current = step.state === "current";
-
-  return (
-    <div className="grid grid-cols-[1.5rem_1fr] gap-3">
-      <div className="relative flex justify-center">
-        <span
-          className={
-            done
-              ? "z-10 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--primary)] text-[var(--on-primary)]"
-              : current
-                ? "z-10 flex h-6 w-6 items-center justify-center rounded-full border-2 border-[var(--primary)] bg-[var(--surface)]"
-                : "z-10 flex h-6 w-6 items-center justify-center rounded-full border-2 border-[var(--outline-variant)] bg-[var(--surface)]"
-          }
-        >
-          {done ? (
-            <Check className="h-3.5 w-3.5" />
-          ) : current ? (
-            <span className="h-2 w-2 rounded-full bg-[var(--primary)]" />
-          ) : null}
+        <span className="shrink-0 rounded-full bg-[var(--surface-container-low)] px-3 py-1 text-label-sm">
+          {booking.statusLabel}
         </span>
-        {!isLast ? (
-          <span
-            className={
-              done
-                ? "absolute top-6 h-full w-px bg-[var(--primary)]"
-                : "absolute top-6 h-full w-px bg-[var(--outline-variant)]"
-            }
-          />
+      </div>
+
+      <div className="mt-4 grid gap-2 rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-low)] p-3">
+        <p className="text-label-lg">{booking.whenLabel}</p>
+        <p className="text-body-sm text-[var(--on-surface-variant)]">
+          {booking.packageTitle}
+          {booking.amountInr > 0 ? ` · ₹${booking.amountInr.toLocaleString("en-IN")}` : " · Custom quote"}
+        </p>
+        {booking.address ? (
+          <p className="flex items-start gap-1 text-body-sm text-[var(--on-surface-variant)]">
+            <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span className="min-w-0">{booking.address}</span>
+          </p>
         ) : null}
       </div>
 
-      <div className={isLast ? "pb-0" : "pb-5"}>
-        <h4
-          className={
-            done || current
-              ? "text-label-lg text-[var(--primary)]"
-              : "text-label-lg text-[var(--on-surface-variant)]"
-          }
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <Link
+          className="flex min-h-11 items-center justify-center rounded-md border border-[var(--outline)] bg-[var(--surface-container-lowest)] px-4 text-label-md"
+          href="/customer/chat-thread"
         >
-          {step.title}
-        </h4>
-        <p className="mt-1 text-body-sm text-[var(--on-surface-variant)]">
-          {step.description}
-        </p>
+          Message
+        </Link>
+        {booking.bucket === "completed" ? (
+          <Link
+            className="flex min-h-11 items-center justify-center rounded-md bg-[var(--primary)] px-4 text-label-md text-[var(--on-primary)]"
+            href="/customer/rating-review"
+          >
+            Rate Service
+          </Link>
+        ) : (
+          <span className="flex min-h-11 items-center justify-center gap-1 rounded-md bg-[var(--surface-container)] px-4 text-label-md text-[var(--on-surface)]">
+            <IndianRupee className="h-4 w-4" />
+            {booking.amountInr > 0 ? booking.amountInr.toLocaleString("en-IN") : "Quote"}
+          </span>
+        )}
       </div>
-    </div>
-  );
-}
-
-function QuickActions() {
-  return (
-    <section>
-      <h3 className="mb-3 text-headline-sm">Quick actions</h3>
-      <div className="grid grid-cols-5 gap-2">
-        {quickActions.map(({ href, icon: Icon, label }) => {
-          const content = (
-            <>
-              <span className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]">
-                <Icon className="h-5 w-5" />
-              </span>
-              <span className="max-w-full truncate text-label-sm text-[var(--on-surface-variant)]">
-                {label}
-              </span>
-            </>
-          );
-
-          return href ? (
-            <Link
-              className="flex min-w-0 flex-col items-center gap-1.5 rounded-lg p-1 text-center"
-              href={href}
-              key={label}
-            >
-              {content}
-            </Link>
-          ) : (
-            <button
-              className="flex min-w-0 flex-col items-center gap-1.5 rounded-lg p-1 text-center"
-              key={label}
-            >
-              {content}
-            </button>
-          );
-        })}
-      </div>
-    </section>
+    </article>
   );
 }
 
@@ -390,8 +203,7 @@ function SupportNote() {
   return (
     <section className="rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-low)] p-4 text-center">
       <p className="text-body-sm text-[var(--on-surface-variant)]">
-        Need assistance with this booking? Use Help for cancellation, provider
-        delay, payment, or safety support.
+        Need assistance with a booking? Use Help for cancellation, provider delay, payment, or safety support.
       </p>
     </section>
   );

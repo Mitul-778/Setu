@@ -298,10 +298,13 @@ model Booking {
   provider         ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
   customerName     String
+  customerUserId   String?
   serviceTitle     String
   scheduledAt      DateTime
   status           BookingStatus @default(confirmed)
   amountInr        Int      @default(0)
+  address          String?
+  notes            String   @default("")
   isRepeatCustomer Boolean  @default(false)
 
   createdAt        DateTime @default(now())
@@ -309,6 +312,7 @@ model Booking {
 
   @@index([providerId, status])
   @@index([providerId, scheduledAt])
+  @@index([customerUserId])
 }
 
 model Conversation {
