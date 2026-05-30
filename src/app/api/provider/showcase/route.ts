@@ -10,9 +10,9 @@ import {
 const maxShowcasePhotos = 5;
 
 const portfolioFields = [
-  { field: "photos", type: "photo", purpose: "provider_portfolio", title: "Work photo" },
-  { field: "introImages", type: "intro_image", purpose: "provider_portfolio", title: "Intro image" },
-  { field: "menuImages", type: "service_menu", purpose: "provider_portfolio", title: "Service menu" },
+  { field: "photos", type: "photo", purpose: "provider_portfolio", title: "Work photo", allowedPrefix: "image/" },
+  { field: "introVideos", type: "intro_video", purpose: "provider_portfolio", title: "Intro video", allowedPrefix: "video/" },
+  { field: "menuImages", type: "service_menu", purpose: "provider_portfolio", title: "Service menu", allowedPrefix: "image/" },
 ] as const;
 
 const documentFields = [
@@ -25,13 +25,13 @@ type UploadPurpose =
   | "provider_certificate"
   | "provider_fssai";
 
-function asImageFiles(formData: FormData, field: string) {
+function asAllowedFiles(formData: FormData, field: string, allowedPrefix: string) {
   const values = formData.getAll(field);
   const files: File[] = [];
 
   for (const value of values) {
     if (!(value instanceof File) || value.size === 0) continue;
-    if (!value.type.startsWith("image/")) return "invalid" as const;
+    if (!value.type.startsWith(allowedPrefix)) return "invalid" as const;
     files.push(value);
   }
 
@@ -180,9 +180,9 @@ export async function POST(request: NextRequest) {
     const requiresFssai = requiresFssaiForServices(result.provider.serviceIds);
 
     for (const item of portfolioFields) {
-      const files = asImageFiles(formData, item.field);
+      const files = asAllowedFiles(formData, item.field, item.allowedPrefix);
       if (files === "invalid") {
-        return NextResponse.json({ error: "Only image uploads are allowed." }, { status: 400 });
+        return NextResponse.json({ error: "Only supported media uploads are allowed." }, { status: 400 });
       }
 
       let uploadFiles = files;
@@ -227,9 +227,9 @@ export async function POST(request: NextRequest) {
     }
 
     for (const item of documentFields.filter((field) => requiresFssai || field.type !== "fssai")) {
-      const files = asImageFiles(formData, item.field);
+      const files = asAllowedFiles(formData, item.field, "image/");
       if (files === "invalid") {
-        return NextResponse.json({ error: "Only image uploads are allowed." }, { status: 400 });
+        return NextResponse.json({ error: "Only supported media uploads are allowed." }, { status: 400 });
       }
 
       for (const file of files) {

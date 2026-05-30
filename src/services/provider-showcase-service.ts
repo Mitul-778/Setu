@@ -17,7 +17,7 @@ export type ProviderShowcaseResponse = {
 
 export type ProviderShowcasePayload = {
   photos: File[];
-  introImages: File[];
+  introVideos: File[];
   menuImages: File[];
   fssaiDocuments: File[];
   certificates: File[];
@@ -42,7 +42,7 @@ export async function saveProviderShowcase(payload: ProviderShowcasePayload) {
   const formData = new FormData();
 
   payload.photos.forEach((file) => formData.append("photos", file));
-  payload.introImages.forEach((file) => formData.append("introImages", file));
+  payload.introVideos.forEach((file) => formData.append("introVideos", file));
   payload.menuImages.forEach((file) => formData.append("menuImages", file));
   payload.fssaiDocuments.forEach((file) => formData.append("fssaiDocuments", file));
   payload.certificates.forEach((file) => formData.append("certificates", file));

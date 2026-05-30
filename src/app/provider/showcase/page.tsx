@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -13,6 +13,7 @@ import {
   Plus,
   ShieldCheck,
   Utensils,
+  Video,
 } from "lucide-react";
 import { FileUploadPreview } from "@/components/file-upload-preview";
 import {
@@ -30,7 +31,7 @@ function getErrorMessage(error: unknown) {
 export default function ProviderShowcasePage() {
   const router = useRouter();
   const [photos, setPhotos] = useState<File[]>([]);
-  const [introImages, setIntroImages] = useState<File[]>([]);
+  const [introVideos, setIntroVideos] = useState<File[]>([]);
   const [menuImages, setMenuImages] = useState<File[]>([]);
   const [fssaiDocuments, setFssaiDocuments] = useState<File[]>([]);
   const [certificates, setCertificates] = useState<File[]>([]);
@@ -72,7 +73,7 @@ export default function ProviderShowcasePage() {
     try {
       const saved = await saveProviderShowcase({
         photos,
-        introImages,
+        introVideos,
         menuImages,
         fssaiDocuments: requiresFssai ? fssaiDocuments : [],
         certificates,
@@ -82,7 +83,7 @@ export default function ProviderShowcasePage() {
       setDocuments(saved.documents);
       setRequiresFssai(saved.requiresFssai);
       setPhotos([]);
-      setIntroImages([]);
+      setIntroVideos([]);
       setMenuImages([]);
       setFssaiDocuments([]);
       setCertificates([]);
@@ -100,8 +101,10 @@ export default function ProviderShowcasePage() {
   const isBusy = isLoading || savingAction !== null;
   const savedPhotos = portfolio.filter((item) => item.type === "photo");
   const remainingPhotoSlots = Math.max(0, 5 - savedPhotos.length);
-  const savedIntroImages = portfolio.filter((item) => item.type === "intro_image");
+  const savedIntroVideos = portfolio.filter((item) => item.type === "intro_video" || item.type === "intro_image");
   const savedMenuImages = portfolio.filter((item) => item.type === "service_menu");
+  const photoCount = savedPhotos.length + photos.length;
+  const photoPlaceholderCount = Math.max(0, 3 - photoCount - (remainingPhotoSlots ? 1 : 0));
   const savedFssai = requiresFssai ? documents.filter((item) => item.type === "fssai") : [];
   const savedCertificates = documents.filter((item) => item.type === "certificate");
 
@@ -178,37 +181,35 @@ export default function ProviderShowcasePage() {
                 <FileUploadPreview
                   accept="image/*"
                   className="contents"
-                  emptyClassName="flex aspect-square cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-center"
+                  emptyClassName="flex aspect-square cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-center transition-colors active:opacity-70"
                   icon={ImagePlus}
-                  label={`Upload ${remainingPhotoSlots}`}
+                  label="Upload"
                   maxFiles={remainingPhotoSlots}
                   multiple
                   onFilesChange={setPhotos}
                   previewClassName="contents"
-                  previewItemClassName="relative aspect-square overflow-hidden rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]"
+                  previewItemClassName="relative aspect-square h-full w-full overflow-hidden rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]"
                 />
               ) : null}
               {savedPhotos.slice(0, 5).map((item) => <SavedSquareImage item={item} key={item.id} />)}
+              {Array.from({ length: photoPlaceholderCount }).map((_, index) => (
+                <div
+                  className="aspect-square h-full w-full animate-pulse rounded-md border border-[var(--surface-container-highest)] bg-[var(--surface-container)]"
+                  key={`photo-placeholder-${index}`}
+                />
+              ))}
             </div>
             <p className="mt-2 text-body-sm text-[var(--on-surface-variant)]">
-              Add up to 5 photos of previous work, workspace, tools, or finished service results.
+              Add at least 3 photos of your previous work or workspace.
             </p>
           </section>
 
           <Divider />
 
           <section>
-            <SectionTitle title="Intro Image" badge="Optional" />
-            <FileUploadPreview
-              accept="image/*"
-              className="mt-3 flex flex-col gap-3"
-              emptyClassName="flex aspect-video w-full cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-center"
-              hint="Clear profile or workspace image"
-              icon={ImagePlus}
-              label="Upload intro image"
-              onFilesChange={setIntroImages}
-            />
-            <SavedMediaList items={savedIntroImages} />
+            <SectionTitle title="Intro Video" badge="Optional" />
+            <IntroVideoUpload file={introVideos[0]} onChange={setIntroVideos} />
+            <SavedMediaList items={savedIntroVideos} showThumbnail={false} />
           </section>
 
           <Divider />
@@ -323,6 +324,52 @@ export default function ProviderShowcasePage() {
   );
 }
 
+function IntroVideoUpload({ file, onChange }: { file?: File; onChange: (files: File[]) => void }) {
+  const previewUrl = useMemo(() => file ? URL.createObjectURL(file) : "", [file]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  return (
+    <div className="relative mt-3 aspect-video w-full overflow-hidden rounded-lg border border-dashed border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]">
+      <input
+        accept="video/*"
+        className="sr-only"
+        id="intro-video-upload"
+        onChange={(event) => onChange(Array.from(event.target.files ?? []).slice(0, 1))}
+        type="file"
+      />
+      {previewUrl ? (
+        <>
+          <video
+            className="h-full w-full object-cover grayscale"
+            controls
+            muted
+            playsInline
+            src={previewUrl}
+          />
+          <label
+            className="absolute right-2 top-2 z-10 cursor-pointer rounded-full bg-[var(--surface-container-lowest)] px-3 py-1.5 text-label-sm text-[var(--on-surface)] shadow-[0_1px_4px_rgb(0_0_0_/_0.16)]"
+            htmlFor="intro-video-upload"
+          >
+            Replace
+          </label>
+        </>
+      ) : (
+        <label className="flex h-full w-full cursor-pointer flex-col items-center justify-center text-center transition-colors active:opacity-70" htmlFor="intro-video-upload">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--surface-container-high)] text-[var(--on-surface)]">
+            <Video className="h-6 w-6" />
+          </span>
+          <span className="mt-2 text-label-md text-[var(--on-surface)]">Record or upload video</span>
+          <span className="mt-1 text-body-sm text-[var(--on-surface-variant)]">30-60 seconds</span>
+        </label>
+      )}
+    </div>
+  );
+}
 function SectionTitle({ badge, title }: { badge: string; title: string }) {
   return (
     <div className="flex items-center justify-between gap-3">
@@ -336,7 +383,7 @@ function SectionTitle({ badge, title }: { badge: string; title: string }) {
 
 function SavedSquareImage({ item }: { item: ProviderShowcaseFile }) {
   return (
-    <div className="relative aspect-square overflow-hidden rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]">
+    <div className="relative aspect-square h-full w-full overflow-hidden rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]">
       <img alt={item.label} className="h-full w-full object-cover grayscale" src={item.url} />
       <span className="absolute bottom-1 left-1 right-1 truncate rounded bg-[var(--surface-container-lowest)]/90 px-1.5 py-1 text-label-sm text-[var(--on-surface)]">
         Saved
