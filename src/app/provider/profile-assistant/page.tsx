@@ -67,13 +67,13 @@ export default function ProviderProfileAssistantPage() {
       <div className="mx-auto min-h-dvh w-full min-w-0 max-w-[480px] overflow-x-hidden bg-[var(--surface)] pb-[calc(188px+env(safe-area-inset-bottom))]">
         <header className="sticky top-0 z-40 border-b border-[var(--outline-variant)] bg-[var(--surface)]">
           <div className="flex h-14 items-center justify-between gap-2 px-4 min-[390px]:px-5">
-            <button
+            <Link
               aria-label="Go back"
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[var(--on-surface)]"
-              type="button"
+              href="/provider/services"
             >
               <ArrowLeft className="h-5 w-5" />
-            </button>
+            </Link>
             <h1 className="min-w-0 flex-1 truncate text-center text-headline-sm text-[var(--primary)]">
               Setu Provider AI
             </h1>

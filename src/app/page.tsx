@@ -71,16 +71,19 @@ function TopBar() {
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--outline-variant)] bg-[var(--surface)]">
       <div className="flex h-12 items-center justify-between gap-2 px-4 min-[390px]:px-5">
-        <button className="flex min-h-12 min-w-0 items-center gap-1.5 text-label-lg">
+        <Link className="flex min-h-12 min-w-0 items-center gap-1.5 text-label-lg" href="/select-location">
           <MapPin className="h-4 w-4" />
           <span className="truncate">Bangalore, KA</span>
           <ChevronDown className="h-4 w-4" />
-        </button>
+        </Link>
 
-        <button className="flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border border-[var(--outline-variant)] bg-[var(--surface-container)] px-2.5 text-label-md shadow-[0_1px_2px_rgb(0_0_0_/_0.05)] min-[390px]:px-3">
+        <Link
+          className="flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border border-[var(--outline-variant)] bg-[var(--surface-container)] px-2.5 text-label-md shadow-[0_1px_2px_rgb(0_0_0_/_0.05)] min-[390px]:px-3"
+          href="/customer/assistant"
+        >
           <Sparkles className="h-4 w-4 fill-current" />
           <span>Setu AI</span>
-        </button>
+        </Link>
       </div>
     </header>
   );
@@ -274,18 +277,19 @@ function RecommendedProviders() {
 
 function BottomNav() {
   const items = [
-    { label: "Home", icon: Home, active: true },
-    { label: "Search", icon: Search },
-    { label: "Bookings", icon: CalendarDays },
-    { label: "Profile", icon: User },
+    { label: "Home", icon: Home, href: "/", active: true },
+    { label: "Search", icon: Search, href: "/customer" },
+    { label: "Bookings", icon: CalendarDays, href: "/customer/bookings" },
+    { label: "Profile", icon: User, href: "/profile" },
   ];
 
   return (
     <nav className="fixed bottom-0 left-1/2 z-50 w-full max-w-[480px] -translate-x-1/2 border-t border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]">
       <div className="mx-auto grid h-20 w-full max-w-[480px] grid-cols-4 px-1 pb-[env(safe-area-inset-bottom)] text-[var(--on-surface-variant)] min-[390px]:px-2">
-        {items.map(({ label, icon: Icon, active }) => (
-          <button
+        {items.map(({ label, icon: Icon, active, href }) => (
+          <Link
             className="flex min-h-16 flex-col items-center justify-center gap-1 text-label-md"
+            href={href}
             key={label}
           >
             <span
@@ -300,7 +304,7 @@ function BottomNav() {
             <span className={active ? "text-[var(--primary)]" : undefined}>
               {label}
             </span>
-          </button>
+          </Link>
         ))}
       </div>
     </nav>

@@ -4,9 +4,9 @@ import { CalendarDays, Home, User, Wrench } from "lucide-react";
 type ActiveTab = "home" | "search" | "bookings" | "profile" | "services";
 
 const items = [
-  { label: "Home", href: "/", icon: Home, key: "home" },
-  { label: "Services", href: "/", icon: Wrench, key: "services" },
-  { label: "Bookings", href: "/", icon: CalendarDays, key: "bookings" },
+  { label: "Home", href: "/customer", icon: Home, key: "home" },
+  { label: "Services", href: "/customer", icon: Wrench, key: "services" },
+  { label: "Bookings", href: "/customer/bookings", icon: CalendarDays, key: "bookings" },
   { label: "Profile", href: "/profile", icon: User, key: "profile" },
 ] satisfies Array<{
   label: string;

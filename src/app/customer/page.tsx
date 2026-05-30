@@ -177,7 +177,7 @@ const navItems = [
   { label: "Home", icon: Home, href: "/customer", active: true },
   { label: "Requests", icon: ShieldCheck, href: "/customer/request" },
   { label: "Bookings", icon: CalendarDays, href: "/customer/bookings" },
-  { label: "Messages", icon: MessageSquare, href: undefined },
+  { label: "Messages", icon: MessageSquare, href: "/customer/messages" },
   { label: "Profile", icon: User, href: "/profile" },
 ];
 
@@ -214,11 +214,11 @@ function TopBar({ locationLabel }: { locationLabel: string }) {
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--outline-variant)] bg-[var(--surface)]">
       <div className="flex h-12 items-center justify-between gap-2 px-4 min-[390px]:px-5">
-        <button className="flex min-h-12 min-w-0 items-center gap-1.5 text-label-lg">
+        <Link className="flex min-h-12 min-w-0 items-center gap-1.5 text-label-lg" href="/select-location">
           <MapPin className="h-4 w-4 shrink-0" />
           <span className="truncate">{locationLabel}</span>
           <ChevronDown className="h-4 w-4 shrink-0" />
-        </button>
+        </Link>
 
         <Link
           className="flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border border-[var(--outline-variant)] bg-[var(--surface-container)] px-2.5 text-label-md shadow-[0_1px_2px_rgb(0_0_0_/_0.05)] min-[390px]:px-3"

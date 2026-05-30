@@ -192,7 +192,7 @@ function ProviderBottomNav({ onNavigate }: { onNavigate: (href: string) => void 
     { label: "Dashboard", href: "/provider/dashboard", icon: LayoutDashboard, active: true },
     { label: "Leads", href: "/provider/leads", icon: ListChecks },
     { label: "Jobs", href: "/provider/todays-jobs", icon: BriefcaseBusiness },
-    { label: "Messages", href: "/provider/dashboard", icon: MessageSquare },
+    { label: "Messages", href: "/provider/messages", icon: MessageSquare },
     { label: "Earnings", href: "/provider/earnings-performance", icon: IndianRupee },
   ];
 

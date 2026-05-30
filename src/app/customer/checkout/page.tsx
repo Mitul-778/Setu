@@ -63,12 +63,13 @@ function CheckoutHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--outline-variant)] bg-[var(--surface)]">
       <div className="grid h-12 grid-cols-[2.5rem_1fr_2.5rem] items-center px-3 min-[390px]:px-4">
-        <button
+        <Link
           aria-label="Go back"
           className="flex h-10 w-10 items-center justify-center rounded-full text-[var(--primary)]"
+          href="/customer/booking"
         >
           <ArrowLeft className="h-5 w-5" />
-        </button>
+        </Link>
         <h1 className="truncate text-center text-headline-sm text-[var(--primary)]">
           Checkout
         </h1>

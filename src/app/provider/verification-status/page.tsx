@@ -371,8 +371,8 @@ export default function ProviderVerificationStatusPage() {
 function ProviderBottomNav({ onNavigate }: { onNavigate: (href: string) => void }) {
   const items = [
     { label: "Dashboard", href: "/provider/dashboard", icon: LayoutDashboard },
-    { label: "Leads", href: "/provider/lead-details", icon: ListChecks },
-    { label: "Messages", href: "/provider/dashboard", icon: MessageSquare },
+    { label: "Leads", href: "/provider/leads", icon: ListChecks },
+    { label: "Messages", href: "/provider/messages", icon: MessageSquare },
     { label: "Profile", href: "/provider/profile-preview", icon: User },
   ];
 
