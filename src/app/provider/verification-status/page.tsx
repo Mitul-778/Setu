@@ -82,13 +82,19 @@ function buildTimeline(status: VerificationStatusResponse["status"]): TimelineSt
     },
     {
       title: "Verification Review",
-      body: status === "needs_fix" ? "We need a few fixes before approval." : "Our team is reviewing your documents.",
+      body: approved
+        ? "Your documents have been verified."
+        : status === "needs_fix"
+          ? "We need a few fixes before approval."
+          : "Our team is reviewing your documents.",
       state: approved ? "done" : submitted ? "current" : "upcoming",
     },
     {
       title: "Start Earning",
-      body: "Once approved, you can start accepting jobs.",
-      state: approved ? "current" : "upcoming",
+      body: approved
+        ? "Your profile is live — start accepting jobs now."
+        : "Once approved, you can start accepting jobs.",
+      state: approved ? "done" : "upcoming",
     },
   ];
 }
@@ -200,10 +206,17 @@ export default function ProviderVerificationStatusPage() {
                 </span>
                 <h2 className="mt-3 text-headline-md text-[var(--on-surface)]">{headerCopy.title}</h2>
                 <p className="mt-1.5 max-w-[20rem] text-body-sm text-[var(--on-surface-variant)]">{headerCopy.body}</p>
-                <span className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[var(--secondary-container)] px-3 py-1 text-label-sm text-[var(--on-secondary-container)]">
-                  <Clock className="h-3.5 w-3.5" />
-                  Expected review time: {status.expectedReviewHours} hours
-                </span>
+                {status.status === "submitted" || status.status === "needs_fix" ? (
+                  <span className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[var(--secondary-container)] px-3 py-1 text-label-sm text-[var(--on-secondary-container)]">
+                    <Clock className="h-3.5 w-3.5" />
+                    Expected review time: {status.expectedReviewHours} hours
+                  </span>
+                ) : status.status === "approved" ? (
+                  <span className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[var(--primary)] px-3 py-1 text-label-sm text-[var(--on-primary)]">
+                    <Check className="h-3.5 w-3.5" />
+                    Verified profile
+                  </span>
+                ) : null}
               </div>
 
               {pendingActions.length > 0 ? (
