@@ -96,7 +96,7 @@ function toStatusResponse(provider: ProviderWithStatus) {
   return {
     ok: true as const,
     providerId: provider.id,
-    status: provider.onboardingStatus,
+    status: verification?.status ?? provider.onboardingStatus,
     expectedReviewHours: verification?.expectedReviewHours ?? 48,
     submittedAt: (provider.submittedAt ?? verification?.submittedAt)?.toISOString() ?? null,
     reviewedAt: verification?.reviewedAt?.toISOString() ?? null,

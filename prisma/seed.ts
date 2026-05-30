@@ -12,6 +12,10 @@ const adapter = new PrismaPg({ connectionString });
 const db = new PrismaClient({ adapter });
 
 async function main() {
+  await db.review.deleteMany();
+  await db.conversation.deleteMany();
+  await db.booking.deleteMany();
+  await db.lead.deleteMany();
   await db.providerVerificationStatus.deleteMany();
   await db.providerDocument.deleteMany();
   await db.portfolioItem.deleteMany();
@@ -22,6 +26,21 @@ async function main() {
   await db.providerServiceSettings.deleteMany();
   await db.providerProfile.deleteMany();
   await db.user.deleteMany();
+
+  const now = new Date();
+  const minutesAgo = (mins: number) => new Date(now.getTime() - mins * 60 * 1000);
+  const daysAgo = (days: number) => new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+  const todayAt = (hour: number, minute: number) => {
+    const date = new Date(now);
+    date.setHours(hour, minute, 0, 0);
+    return date;
+  };
+  const tomorrowAt = (hour: number, minute: number) => {
+    const date = new Date(now);
+    date.setDate(now.getDate() + 1);
+    date.setHours(hour, minute, 0, 0);
+    return date;
+  };
 
   await db.user.create({
     data: {
@@ -57,6 +76,7 @@ async function main() {
           neighborhood: "100 Feet Road",
           serviceRadiusKm: 10,
           onboardingStatus: "submitted",
+          profileViews: 248,
           submittedAt: new Date(),
           services: {
             create: [
@@ -126,6 +146,113 @@ async function main() {
                 "Aadhaar card back side",
               ],
             },
+          },
+          leads: {
+            create: [
+              {
+                customerName: "Ananya R.",
+                serviceTitle: "Bridal mehendi for Sunday",
+                area: "Koramangala",
+                preferredLanguage: "Hindi",
+                budgetInr: 2500,
+                status: "new",
+                urgent: true,
+                createdAt: minutesAgo(30),
+              },
+              {
+                customerName: "Priya S.",
+                serviceTitle: "Party makeup for family event",
+                area: "Indiranagar",
+                preferredLanguage: "English",
+                budgetInr: 1800,
+                status: "new",
+                createdAt: minutesAgo(90),
+              },
+              {
+                customerName: "Reena T.",
+                serviceTitle: "Engagement mehendi",
+                area: "HSR Layout",
+                preferredLanguage: "Kannada",
+                budgetInr: 3000,
+                status: "viewed",
+                createdAt: minutesAgo(240),
+                respondedAt: minutesAgo(232),
+              },
+              {
+                customerName: "Maya L.",
+                serviceTitle: "Festival mehendi",
+                area: "Domlur",
+                budgetInr: 1200,
+                status: "accepted",
+                createdAt: daysAgo(2),
+                respondedAt: daysAgo(2),
+              },
+              {
+                customerName: "Sara K.",
+                serviceTitle: "Guest mehendi",
+                area: "Whitefield",
+                preferredLanguage: "Hindi",
+                budgetInr: 900,
+                status: "declined",
+                createdAt: daysAgo(4),
+              },
+            ],
+          },
+          bookings: {
+            create: [
+              {
+                customerName: "Ananya R.",
+                serviceTitle: "Engagement mehendi",
+                scheduledAt: todayAt(17, 30),
+                status: "confirmed",
+                amountInr: 3500,
+              },
+              {
+                customerName: "Divya P.",
+                serviceTitle: "Festival home service",
+                scheduledAt: tomorrowAt(11, 0),
+                status: "accepted",
+                amountInr: 2800,
+              },
+              {
+                customerName: "Anita S.",
+                serviceTitle: "Bridal mehendi",
+                scheduledAt: daysAgo(5),
+                status: "completed",
+                amountInr: 5000,
+                isRepeatCustomer: true,
+              },
+              {
+                customerName: "Ritu M.",
+                serviceTitle: "Party mehendi",
+                scheduledAt: daysAgo(9),
+                status: "completed",
+                amountInr: 4200,
+              },
+            ],
+          },
+          conversations: {
+            create: [
+              {
+                customerName: "Ananya R.",
+                lastMessage: "Can you share one more bridal design?",
+                lastMessageAt: minutesAgo(4),
+                unreadCount: 1,
+              },
+              {
+                customerName: "Priya S.",
+                lastMessage: "Is travel included for HSR Layout?",
+                lastMessageAt: minutesAgo(18),
+                unreadCount: 0,
+              },
+            ],
+          },
+          reviews: {
+            create: [
+              { customerName: "Anita S.", rating: 5, comment: "Beautiful work and very punctual." },
+              { customerName: "Ritu M.", rating: 5, comment: "Loved the design!" },
+              { customerName: "Sneha D.", rating: 4, comment: "Good experience overall." },
+            ],
           },
         },
       },

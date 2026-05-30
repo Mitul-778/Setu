@@ -81,6 +81,7 @@ model ProviderProfile {
 
   onboardingStatus ProviderOnboardingStatus @default(draft)
   trustScore        Int      @default(0)
+  profileViews      Int      @default(0)
   submittedAt       DateTime?
   approvedAt        DateTime?
   rejectedAt        DateTime?
@@ -96,6 +97,10 @@ model ProviderProfile {
   settings         ProviderServiceSettings?
   availability     AvailabilitySlot[]
   verification     ProviderVerificationStatus?
+  leads            Lead[]
+  bookings         Booking[]
+  conversations    Conversation[]
+  reviews          Review[]
 
   @@index([onboardingStatus])
   @@index([city, area])
@@ -243,4 +248,91 @@ model ProviderVerificationStatus {
 
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+}
+
+enum LeadStatus {
+  new
+  viewed
+  accepted
+  declined
+  quoted
+}
+
+enum BookingStatus {
+  accepted
+  confirmed
+  in_progress
+  completed
+  cancelled
+}
+
+model Lead {
+  id                String   @id @default(cuid())
+  providerId        String
+  provider          ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  customerName      String
+  serviceTitle      String
+  area              String?
+  preferredLanguage String?
+  budgetInr         Int?
+  note              String   @default("")
+  status            LeadStatus @default(new)
+  urgent            Boolean  @default(false)
+  respondedAt       DateTime?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([providerId, status])
+  @@index([providerId, createdAt])
+}
+
+model Booking {
+  id               String   @id @default(cuid())
+  providerId       String
+  provider         ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  customerName     String
+  serviceTitle     String
+  scheduledAt      DateTime
+  status           BookingStatus @default(confirmed)
+  amountInr        Int      @default(0)
+  isRepeatCustomer Boolean  @default(false)
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([providerId, status])
+  @@index([providerId, scheduledAt])
+}
+
+model Conversation {
+  id            String   @id @default(cuid())
+  providerId    String
+  provider      ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  customerName  String
+  lastMessage   String   @default("")
+  lastMessageAt DateTime @default(now())
+  unreadCount   Int      @default(0)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([providerId, lastMessageAt])
+}
+
+model Review {
+  id           String   @id @default(cuid())
+  providerId   String
+  provider     ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  customerName String
+  rating       Int
+  comment      String   @default("")
+
+  createdAt    DateTime @default(now())
+
+  @@index([providerId])
 }
