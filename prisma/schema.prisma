@@ -312,6 +312,8 @@ model Booking {
   checklist        Json     @default("[]")
   startedAt        DateTime?
   completedAt      DateTime?
+  paidAt           DateTime?
+  paymentMethod    String?
 
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt

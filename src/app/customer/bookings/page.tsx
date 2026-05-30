@@ -217,7 +217,15 @@ function BookingCard({ booking }: { booking: CustomerBooking }) {
         >
           Message
         </Link>
-        {booking.bucket === "completed" ? (
+        {booking.bucket === "completed" && !booking.paid ? (
+          <Link
+            className="flex min-h-11 items-center justify-center gap-1 rounded-md bg-[var(--primary)] px-4 text-label-md text-[var(--on-primary)]"
+            href={`/customer/checkout?bookingId=${booking.id}`}
+          >
+            <IndianRupee className="h-4 w-4" />
+            Pay now
+          </Link>
+        ) : booking.bucket === "completed" ? (
           <Link
             className="flex min-h-11 items-center justify-center rounded-md bg-[var(--primary)] px-4 text-label-md text-[var(--on-primary)]"
             href="/customer/rating-review"

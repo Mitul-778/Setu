@@ -52,6 +52,7 @@ export type CustomerBooking = {
   bucket: "upcoming" | "active" | "completed";
   otp: string | null;
   checklist: { key: string; label: string; done: boolean }[];
+  paid: boolean;
 };
 
 export type CustomerBookingsResponse = {

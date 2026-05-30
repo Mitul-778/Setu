@@ -160,6 +160,11 @@ async function buildResponse(user: UserRecord, provider: ProviderRecord) {
   }
 
   const activeBookings = bookings.filter((booking) => booking.status !== "cancelled");
+  // "Accepted jobs" = bookings the provider has actually engaged with — a freshly
+  // booked (still "confirmed") request is a New Lead, not an accepted job yet.
+  const acceptedBookings = bookings.filter((booking) =>
+    ["accepted", "in_progress", "completed"].includes(booking.status),
+  );
   const respondedLeads = leads.filter((lead) => lead.respondedAt);
   const acceptedLeads = leads.filter((lead) => lead.status === "accepted").length;
   const repeatBookings = bookings.filter((booking) => booking.isRepeatCustomer).length;
@@ -221,8 +226,8 @@ async function buildResponse(user: UserRecord, provider: ProviderRecord) {
     summary: {
       newLeads: newLeads.length,
       urgentToday,
-      acceptedJobs: activeBookings.length,
-      jobsThisWeek: activeBookings.filter((booking) => booking.createdAt >= weekAgo).length,
+      acceptedJobs: acceptedBookings.length,
+      jobsThisWeek: acceptedBookings.filter((booking) => booking.createdAt >= weekAgo).length,
       earningsThisMonthInr: earningsThisMonth,
       earningsThisMonthLabel: formatINR(earningsThisMonth),
       responseRatePct: leads.length ? Math.round((respondedLeads.length / leads.length) * 100) : 0,

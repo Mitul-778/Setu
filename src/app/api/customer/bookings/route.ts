@@ -78,6 +78,7 @@ export async function GET(request: NextRequest) {
         address: true,
         otp: true,
         checklist: true,
+        paidAt: true,
         provider: { select: { displayName: true, category: true } },
       },
     });
@@ -99,10 +100,14 @@ export async function GET(request: NextRequest) {
           amountInr: booking.amountInr,
           address: booking.address,
           status: booking.status,
-          statusLabel: statusLabels[booking.status] ?? booking.status,
+          statusLabel:
+            booking.status === "completed" && !booking.paidAt
+              ? "Payment due"
+              : statusLabels[booking.status] ?? booking.status,
           bucket: bucketFor(booking.status),
           otp: booking.status === "accepted" ? booking.otp : null,
           checklist: booking.status === "in_progress" ? readChecklist(booking.checklist) : [],
+          paid: Boolean(booking.paidAt),
         };
       }),
     });
