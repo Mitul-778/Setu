@@ -91,8 +91,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ ok: true as const, lead: toLead(lead, now) });
     }
 
+    // Only show incoming, unactioned leads here. Once a lead is accepted (it
+    // becomes a job), declined, or quoted, it drops off the leads list.
     const leads = await db.lead.findMany({
-      where: { providerId: result.providerId },
+      where: { providerId: result.providerId, status: { in: ["new", "viewed"] } },
       orderBy: { createdAt: "desc" },
     });
 

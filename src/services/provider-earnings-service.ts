@@ -13,6 +13,7 @@ export type ProviderEarnings = {
     ratingCount: number;
   };
   ratingTrend: { label: string; value: string; heightPct: string }[];
+  recentReviews: { customerName: string; rating: number; comment: string; dateLabel: string }[];
   payouts: { amountLabel: string; dateLabel: string; service: string }[];
   metrics: {
     profileViews: number;

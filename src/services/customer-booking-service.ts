@@ -53,6 +53,7 @@ export type CustomerBooking = {
   otp: string | null;
   checklist: { key: string; label: string; done: boolean }[];
   paid: boolean;
+  reviewed: boolean;
 };
 
 export type CustomerBookingsResponse = {

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Check, IndianRupee, MapPin, Menu, Search, ShieldCheck, User } from "lucide-react";
+import { Check, IndianRupee, MapPin, Menu, Search, ShieldCheck, Star, User } from "lucide-react";
 import { loadCustomerBookings, type CustomerBooking } from "@/services/customer-booking-service";
 
 const tabs = ["Upcoming", "Active", "Completed"] as const;
@@ -225,10 +225,15 @@ function BookingCard({ booking }: { booking: CustomerBooking }) {
             <IndianRupee className="h-4 w-4" />
             Pay now
           </Link>
+        ) : booking.bucket === "completed" && booking.reviewed ? (
+          <span className="flex min-h-11 items-center justify-center gap-1 rounded-md bg-[var(--surface-container)] px-4 text-label-md text-[var(--on-surface)]">
+            <Star className="h-4 w-4 fill-current" />
+            Reviewed
+          </span>
         ) : booking.bucket === "completed" ? (
           <Link
             className="flex min-h-11 items-center justify-center rounded-md bg-[var(--primary)] px-4 text-label-md text-[var(--on-primary)]"
-            href="/customer/rating-review"
+            href={`/customer/rating-review?bookingId=${booking.id}`}
           >
             Rate Service
           </Link>

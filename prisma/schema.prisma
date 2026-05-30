@@ -369,8 +369,10 @@ model Review {
   customerName String
   rating       Int
   comment      String   @default("")
+  bookingId    String?
 
   createdAt    DateTime @default(now())
 
   @@index([providerId])
+  @@index([bookingId])
 }

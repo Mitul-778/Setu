@@ -142,7 +142,7 @@ function CheckoutContent() {
                   </p>
                   <Link
                     className="mt-4 inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--primary)] px-4 text-label-md text-[var(--on-primary)]"
-                    href="/customer/rating-review"
+                    href={`/customer/rating-review?bookingId=${checkout.id}`}
                   >
                     Rate the service
                   </Link>

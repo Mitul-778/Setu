@@ -191,6 +191,29 @@ export default function ProviderEarningsPerformancePage() {
                 )}
               </section>
 
+              {data.recentReviews.length ? (
+                <section className="mt-4 rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-4">
+                  <h2 className="text-headline-sm text-[var(--primary)]">Recent reviews</h2>
+                  <div className="mt-3 flex flex-col divide-y divide-[var(--surface-variant)]">
+                    {data.recentReviews.map((review, index) => (
+                      <div className="py-3 first:pt-0 last:pb-0" key={`${review.dateLabel}-${index}`}>
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-label-lg text-[var(--on-surface)]">{review.customerName}</span>
+                          <span className="flex items-center gap-1 text-label-md text-[var(--on-surface-variant)]">
+                            <Star className="h-3.5 w-3.5 fill-current text-[var(--primary)]" />
+                            {review.rating.toFixed(1)}
+                          </span>
+                        </div>
+                        {review.comment ? (
+                          <p className="mt-1 text-body-sm text-[var(--on-surface-variant)]">{review.comment}</p>
+                        ) : null}
+                        <p className="mt-1 text-label-sm text-[var(--on-surface-variant)]">{review.dateLabel}</p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
               <section className="mt-4 rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container)] p-4">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-[var(--primary)]" fill="currentColor" />

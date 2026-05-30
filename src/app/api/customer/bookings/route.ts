@@ -85,6 +85,12 @@ export async function GET(request: NextRequest) {
 
     const now = new Date();
 
+    const reviewedRows = await db.review.findMany({
+      where: { bookingId: { in: bookings.map((booking) => booking.id) } },
+      select: { bookingId: true },
+    });
+    const reviewedIds = new Set(reviewedRows.map((row) => row.bookingId).filter(Boolean));
+
     return NextResponse.json({
       ok: true as const,
       bookings: bookings.map((booking) => {
@@ -108,6 +114,7 @@ export async function GET(request: NextRequest) {
           otp: booking.status === "accepted" ? booking.otp : null,
           checklist: booking.status === "in_progress" ? readChecklist(booking.checklist) : [],
           paid: Boolean(booking.paidAt),
+          reviewed: reviewedIds.has(booking.id),
         };
       }),
     });

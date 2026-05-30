@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
       }),
       db.review.findMany({
         where: { providerId: provider.id },
-        select: { rating: true, createdAt: true },
+        select: { rating: true, createdAt: true, customerName: true, comment: true },
         orderBy: { createdAt: "asc" },
       }),
       db.lead.findMany({
@@ -123,6 +123,15 @@ export async function GET(request: NextRequest) {
         ratingCount: ratings.length,
       },
       ratingTrend,
+      recentReviews: reviews
+        .slice(-5)
+        .reverse()
+        .map((review) => ({
+          customerName: review.customerName,
+          rating: review.rating,
+          comment: review.comment,
+          dateLabel: review.createdAt.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }),
+        })),
       payouts,
       metrics: {
         profileViews: provider.profileViews,
