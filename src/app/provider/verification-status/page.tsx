@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { FileUploadPreview } from "@/components/file-upload-preview";
+import { SetuLoader } from "@/components/setu-loader";
 import {
   loadVerificationStatus,
   resubmitVerification,
@@ -186,11 +187,7 @@ export default function ProviderVerificationStatusPage() {
         </header>
 
         <section className="flex flex-col gap-6 px-4 py-5 min-[390px]:px-5 min-[390px]:py-6">
-          {isLoading ? (
-            <div className="rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-low)] px-3 py-2 text-body-sm text-[var(--on-surface-variant)]">
-              Loading verification status...
-            </div>
-          ) : null}
+          {isLoading ? <SetuLoader label="Loading verification status..." /> : null}
 
           {error ? (
             <div className="rounded-md border border-[var(--error)] bg-[var(--error-container)] px-3 py-2 text-body-sm text-[var(--on-error-container)]">

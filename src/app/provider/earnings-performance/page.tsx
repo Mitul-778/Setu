@@ -22,6 +22,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { loadProviderEarnings, type ProviderEarnings } from "@/services/provider-earnings-service";
+import { SetuLoader } from "@/components/setu-loader";
 
 const aiSuggestions = [
   "Add 2 more portfolio photos for bridal work to improve profile visibility.",
@@ -107,7 +108,7 @@ export default function ProviderEarningsPerformancePage() {
 
         <section className="px-4 py-4 min-[390px]:px-5">
           {isLoading ? (
-            <p className="text-body-sm text-[var(--on-surface-variant)]">Loading earnings...</p>
+            <SetuLoader label="Loading earnings..." />
           ) : error ? (
             <p className="rounded-md border border-[var(--error)] bg-[var(--error-container)] px-3 py-2 text-body-sm text-[var(--on-error-container)]">
               {error}

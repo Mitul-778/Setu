@@ -14,6 +14,7 @@ import {
   User,
 } from "lucide-react";
 import { loadCheckout, payForBooking, type CheckoutContext } from "@/services/customer-checkout-service";
+import { SetuLoader } from "@/components/setu-loader";
 
 const paymentOptions = [
   { value: "UPI", label: "UPI", detail: "GPay, PhonePe, Paytm, BHIM", icon: Smartphone },
@@ -99,7 +100,7 @@ function CheckoutContent() {
 
         <section className="flex min-w-0 flex-col gap-4 px-4 py-4 min-[390px]:px-5">
           {isLoading ? (
-            <p className="text-body-sm text-[var(--on-surface-variant)]">Loading checkout...</p>
+            <SetuLoader label="Loading checkout..." />
           ) : error || !checkout ? (
             <div className="rounded-lg border border-dashed border-[var(--outline-variant)] bg-[var(--surface-container-low)] p-6 text-center">
               <p className="text-body-md text-[var(--on-surface)]">{error || "Booking not found"}</p>

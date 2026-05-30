@@ -15,6 +15,7 @@ import {
   User,
 } from "lucide-react";
 import { loadProviderDashboard, type ProviderDashboardResponse } from "@/services/provider-dashboard-service";
+import { SetuLoader } from "@/components/setu-loader";
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong.";
@@ -120,11 +121,7 @@ export default function ProviderDashboardPage() {
         </header>
 
         <section className="px-4 py-5 min-[390px]:px-5 min-[390px]:py-6">
-          {isLoading ? (
-            <div className="rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-low)] px-3 py-2 text-body-sm text-[var(--on-surface-variant)]">
-              Loading dashboard...
-            </div>
-          ) : null}
+          {isLoading ? <SetuLoader label="Loading dashboard..." /> : null}
 
           {error ? (
             <div className="rounded-md border border-[var(--error)] bg-[var(--error-container)] px-3 py-2 text-body-sm text-[var(--on-error-container)]">

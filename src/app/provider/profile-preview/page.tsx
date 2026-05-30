@@ -30,6 +30,7 @@ import {
   submitProviderProfile,
   type ProviderProfileResponse,
 } from "@/services/provider-profile-service";
+import { SetuLoader } from "@/components/setu-loader";
 
 const trustBadgeIcons: Record<string, typeof ShieldCheck> = {
   id_verified: ShieldCheck,
@@ -163,11 +164,7 @@ export default function ProviderProfilePreviewPage() {
         </header>
 
         <section className="px-4 py-5 min-[390px]:px-5 min-[390px]:py-6">
-          {isLoading ? (
-            <div className="rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-low)] px-3 py-2 text-body-sm text-[var(--on-surface-variant)]">
-              Loading your profile...
-            </div>
-          ) : null}
+          {isLoading ? <SetuLoader label="Loading your profile..." /> : null}
 
           {error ? (
             <div className="mb-4 rounded-md border border-[var(--error)] bg-[var(--error-container)] px-3 py-2 text-body-sm text-[var(--on-error-container)]">

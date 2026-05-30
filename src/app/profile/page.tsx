@@ -15,6 +15,7 @@ import {
   Verified,
 } from "lucide-react";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import { SetuLoader } from "@/components/setu-loader";
 import { LANGUAGES } from "@/lib/categories";
 import { loadProfile, logout, saveProfile, type Profile } from "@/services/profile-service";
 
@@ -101,7 +102,7 @@ export default function ProfilePage() {
 
         <div className="px-4 pt-6 min-[390px]:px-5">
           {isLoading ? (
-            <p className="text-body-sm text-[var(--on-surface-variant)]">Loading profile...</p>
+            <SetuLoader label="Loading profile..." />
           ) : (
             <>
               <section className="flex flex-col items-center pb-6 pt-1">

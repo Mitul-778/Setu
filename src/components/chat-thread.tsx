@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, BadgeCheck, CheckCheck, ImagePlus, MoreVertical, Paperclip, Send, Sparkles, User } from "lucide-react";
 import { loadChatThread, sendChatMessage, type ChatMessage, type ChatThread as ChatThreadData } from "@/services/chat-service";
+import { SetuLoader } from "@/components/setu-loader";
 
 const quickReplies = [
   "Can you share more details?",
@@ -122,7 +123,7 @@ export function ChatThread({
 
         <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto bg-[var(--surface-container-lowest)] px-4 py-4 min-[390px]:px-5">
           {isLoading ? (
-            <p className="text-center text-body-sm text-[var(--on-surface-variant)]">Loading conversation...</p>
+            <SetuLoader label="Loading conversation..." />
           ) : error && !thread ? (
             <p className="rounded-md border border-[var(--error)] bg-[var(--error-container)] px-3 py-2 text-body-sm text-[var(--on-error-container)]">
               {error}

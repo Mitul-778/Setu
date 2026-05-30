@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { ArrowLeft, BadgeCheck, Star, User } from "lucide-react";
 import { loadReviewContext, submitReview, type ReviewContext } from "@/services/customer-review-service";
+import { SetuLoader } from "@/components/setu-loader";
 
 const reviewTags = [
   "Professional",
@@ -103,7 +104,7 @@ function RatingReviewContent() {
 
         <section className="flex min-w-0 flex-col gap-6 px-4 py-5 min-[390px]:px-5">
           {isLoading ? (
-            <p className="text-body-sm text-[var(--on-surface-variant)]">Loading...</p>
+            <SetuLoader />
           ) : loadError || !context ? (
             <div className="rounded-lg border border-dashed border-[var(--outline-variant)] bg-[var(--surface-container-low)] p-6 text-center">
               <p className="text-body-md text-[var(--on-surface)]">{loadError || "Booking not found"}</p>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ArrowLeft, ChevronRight, IndianRupee, MapPin } from "lucide-react";
 import { loadProviderLeads, type ProviderLead } from "@/services/provider-leads-service";
+import { SetuLoader } from "@/components/setu-loader";
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong.";
@@ -56,7 +57,7 @@ export default function ProviderLeadsPage() {
 
         <section className="flex min-w-0 flex-col gap-3 px-4 py-4 min-[390px]:px-5">
           {isLoading ? (
-            <p className="text-body-sm text-[var(--on-surface-variant)]">Loading leads...</p>
+            <SetuLoader label="Loading leads..." />
           ) : error ? (
             <p className="rounded-md border border-[var(--error)] bg-[var(--error-container)] px-3 py-2 text-body-sm text-[var(--on-error-container)]">
               {error}

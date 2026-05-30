@@ -18,6 +18,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { loadProviderLead, submitLeadDecision, type ProviderLead } from "@/services/provider-leads-service";
+import { SetuLoader } from "@/components/setu-loader";
 
 function initialsOf(name: string) {
   return name
@@ -125,7 +126,7 @@ function LeadDetailsContent() {
         </header>
 
         {isLoading ? (
-          <p className="px-4 py-6 text-body-sm text-[var(--on-surface-variant)] min-[390px]:px-5">Loading lead...</p>
+          <SetuLoader label="Loading lead..." />
         ) : error || !lead ? (
           <section className="flex flex-col items-center gap-3 px-4 py-16 text-center">
             <p className="text-headline-sm text-[var(--on-surface)]">{error || "Lead not found"}</p>

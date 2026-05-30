@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { OpsIcon } from "@/components/ops-icon";
+import { SetuLoader } from "@/components/setu-loader";
 import {
   loadAdminProvider,
   loadAdminProviders,
@@ -303,7 +304,7 @@ export default function AdminApplicantsPage() {
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]">
           <div className="min-h-0 flex-1 overflow-auto">
             {isLoading ? (
-              <p className="p-6 text-sm text-[var(--on-surface-variant)]">Loading applicants...</p>
+              <SetuLoader label="Loading applicants..." />
             ) : error ? (
               <p className="m-4 rounded-md border border-[var(--error)] bg-[var(--error-container)] p-3 text-sm text-[var(--on-error-container)]">
                 {error}
@@ -433,7 +434,7 @@ export default function AdminApplicantsPage() {
           </div>
 
           {detailLoading ? (
-            <p className="p-6 text-sm text-[var(--on-surface-variant)]">Loading application...</p>
+            <SetuLoader label="Loading application..." />
           ) : provider ? (
             <>
               <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-6">

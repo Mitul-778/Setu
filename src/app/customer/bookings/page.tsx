@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Check, IndianRupee, MapPin, Menu, Search, ShieldCheck, Star, User } from "lucide-react";
 import { loadCustomerBookings, type CustomerBooking } from "@/services/customer-booking-service";
+import { SetuLoader } from "@/components/setu-loader";
 
 const tabs = ["Upcoming", "Active", "Completed"] as const;
 type BookingTab = (typeof tabs)[number];
@@ -56,7 +57,7 @@ export default function CustomerBookingsPage() {
 
         <section className="flex min-w-0 flex-col gap-4 px-4 py-4 min-[390px]:px-5">
           {isLoading ? (
-            <p className="text-body-sm text-[var(--on-surface-variant)]">Loading your bookings...</p>
+            <SetuLoader label="Loading your bookings..." />
           ) : error ? (
             <p className="rounded-md border border-[var(--error)] bg-[var(--error-container)] px-3 py-2 text-body-sm text-[var(--on-error-container)]">
               {error}

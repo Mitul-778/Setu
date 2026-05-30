@@ -10,6 +10,7 @@ import {
   toggleJobChecklist,
   type ProviderJob,
 } from "@/services/provider-jobs-service";
+import { SetuLoader } from "@/components/setu-loader";
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong.";
@@ -117,7 +118,7 @@ export default function ProviderTodaysJobsPage() {
           ) : null}
 
           {isLoading ? (
-            <p className="text-body-sm text-[var(--on-surface-variant)]">Loading jobs...</p>
+            <SetuLoader label="Loading jobs..." />
           ) : error ? (
             <p className="rounded-md border border-[var(--error)] bg-[var(--error-container)] px-3 py-2 text-body-sm text-[var(--on-error-container)]">
               {error}

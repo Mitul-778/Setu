@@ -14,6 +14,7 @@ import {
   NotebookPen,
 } from "lucide-react";
 import { createBooking, loadBookingContext, type BookingContext } from "@/services/customer-booking-service";
+import { SetuLoader } from "@/components/setu-loader";
 
 const times = ["09:00 AM", "10:30 AM", "02:00 PM", "04:30 PM"];
 const platformFee = 49;
@@ -140,7 +141,7 @@ function CustomerBookingPage() {
         </header>
 
         {isLoading ? (
-          <p className="px-4 py-6 text-body-sm text-[var(--on-surface-variant)]">Loading booking details...</p>
+          <SetuLoader label="Loading booking details..." />
         ) : loadError || !provider ? (
           <section className="flex flex-col items-center gap-3 px-4 py-16 text-center">
             <p className="text-headline-sm text-[var(--on-surface)]">{loadError || "Provider not found"}</p>
