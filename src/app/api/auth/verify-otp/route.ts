@@ -26,8 +26,10 @@ export async function POST(request: NextRequest) {
     include: { providerProfile: true },
   });
 
+  let providerStatus = user.providerProfile?.onboardingStatus ?? null;
+
   if (intent === "provider" && !user.providerProfile) {
-    await db.providerProfile.create({
+    const created = await db.providerProfile.create({
       data: {
         userId: user.id,
         onboardingStatus: "draft",
@@ -36,9 +38,17 @@ export async function POST(request: NextRequest) {
         languages: [],
       },
     });
+    providerStatus = created.onboardingStatus;
   }
 
-  const nextPath = intent === "provider" ? "/provider" : "/permissions";
+  function providerNextPath() {
+    // Already onboarded providers skip the onboarding flow.
+    if (providerStatus === "approved" || providerStatus === "submitted") return "/provider/dashboard";
+    if (providerStatus === "needs_fix" || providerStatus === "rejected") return "/provider/verification-status";
+    return "/provider";
+  }
+
+  const nextPath = intent === "provider" ? providerNextPath() : "/permissions";
   const response = NextResponse.json({ ok: true, nextPath, userId: user.id, role: intent });
 
   response.cookies.set("setu_user_id", user.id, {

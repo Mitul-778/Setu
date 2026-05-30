@@ -174,11 +174,11 @@ const newcomerProviders = [
 ];
 
 const navItems = [
-  { label: "Home", icon: Home, active: true },
-  { label: "Requests", icon: ShieldCheck },
-  { label: "Bookings", icon: CalendarDays },
-  { label: "Messages", icon: MessageSquare },
-  { label: "Profile", icon: User },
+  { label: "Home", icon: Home, href: "/customer", active: true },
+  { label: "Requests", icon: ShieldCheck, href: "/customer/request" },
+  { label: "Bookings", icon: CalendarDays, href: "/customer/bookings" },
+  { label: "Messages", icon: MessageSquare, href: undefined },
+  { label: "Profile", icon: User, href: "/profile" },
 ];
 
 export default async function HomePage() {
@@ -444,34 +444,40 @@ function CustomerBottomNav() {
   return (
     <nav className="fixed bottom-0 left-1/2 z-50 w-full max-w-[480px] -translate-x-1/2 border-t border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]">
       <div className="mx-auto grid h-20 w-full max-w-[480px] grid-cols-5 px-1 pb-[env(safe-area-inset-bottom)] text-[var(--on-surface-variant)]">
-        {navItems.map(({ active, icon: Icon, label }) => (
-          <button
-            className="flex min-h-16 min-w-0 flex-col items-center justify-center gap-1 text-label-md"
-            key={label}
-          >
-            <span
-              className={
-                active
-                  ? "flex h-8 w-12 items-center justify-center rounded-full bg-[var(--primary-container)] text-[var(--on-primary)] min-[390px]:w-14"
-                  : "flex h-8 w-12 items-center justify-center rounded-full min-[390px]:w-14"
-              }
-            >
-              <Icon
-                className="h-5 w-5"
-                fill={active ? "currentColor" : "none"}
-              />
-            </span>
-            <span
-              className={
-                active
-                  ? "max-w-full truncate text-[var(--primary)]"
-                  : "max-w-full truncate"
-              }
-            >
-              {label}
-            </span>
-          </button>
-        ))}
+        {navItems.map(({ active, href, icon: Icon, label }) => {
+          const inner = (
+            <>
+              <span
+                className={
+                  active
+                    ? "flex h-8 w-12 items-center justify-center rounded-full bg-[var(--primary-container)] text-[var(--on-primary)] min-[390px]:w-14"
+                    : "flex h-8 w-12 items-center justify-center rounded-full min-[390px]:w-14"
+                }
+              >
+                <Icon className="h-5 w-5" fill={active ? "currentColor" : "none"} />
+              </span>
+              <span
+                className={
+                  active ? "max-w-full truncate text-[var(--primary)]" : "max-w-full truncate"
+                }
+              >
+                {label}
+              </span>
+            </>
+          );
+
+          const className = "flex min-h-16 min-w-0 flex-col items-center justify-center gap-1 text-label-md";
+
+          return href ? (
+            <Link className={className} href={href} key={label}>
+              {inner}
+            </Link>
+          ) : (
+            <button className={className} key={label} type="button">
+              {inner}
+            </button>
+          );
+        })}
       </div>
     </nav>
   );

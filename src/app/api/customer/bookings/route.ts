@@ -160,6 +160,23 @@ export async function POST(request: NextRequest) {
       select: { id: true },
     });
 
+    // Surface the new booking to the provider as an incoming lead.
+    try {
+      await db.lead.create({
+        data: {
+          providerId: provider.id,
+          customerName: user.name ?? "Customer",
+          serviceTitle,
+          area: address,
+          budgetInr: amountInr > 0 ? amountInr : null,
+          note: notes,
+          status: "new",
+        },
+      });
+    } catch (leadError) {
+      console.warn("Could not create lead from booking", leadError);
+    }
+
     return NextResponse.json({ ok: true as const, bookingId: booking.id, nextPath: "/customer/bookings" });
   } catch (error) {
     console.error("Booking create failed", error);
