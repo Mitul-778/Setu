@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
@@ -265,6 +266,7 @@ export default function ProviderDashboardPage() {
                   ) : (
                     data.messages.map((message) => (
                       <CompactRow
+                        href={`/provider/chat-thread?conversationId=${message.id}`}
                         key={message.id}
                         title={`${message.name}${message.unread ? ` • ${message.unread} new` : ""}`}
                         detail={message.text}
@@ -338,12 +340,21 @@ function DashboardPanel({
   );
 }
 
-function CompactRow({ detail, title }: { detail: string; title: string }) {
-  return (
-    <div className="border-t border-[var(--surface-variant)] pt-2 first:border-t-0 first:pt-0">
+function CompactRow({ detail, title, href }: { detail: string; title: string; href?: string }) {
+  const className = "block border-t border-[var(--surface-variant)] pt-2 first:border-t-0 first:pt-0";
+  const content = (
+    <>
       <p className="truncate text-label-md text-[var(--on-surface)]">{title}</p>
       <p className="mt-0.5 line-clamp-2 text-body-sm text-[var(--on-surface-variant)]">{detail}</p>
-    </div>
+    </>
+  );
+
+  return href ? (
+    <Link className={className} href={href}>
+      {content}
+    </Link>
+  ) : (
+    <div className={className}>{content}</div>
   );
 }
 

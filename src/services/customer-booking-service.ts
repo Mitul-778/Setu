@@ -39,6 +39,7 @@ export type CreateBookingResponse = {
 
 export type CustomerBooking = {
   id: string;
+  providerId: string;
   providerName: string;
   providerInitials: string;
   service: string;

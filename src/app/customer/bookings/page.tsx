@@ -177,7 +177,7 @@ function BookingCard({ booking }: { booking: CustomerBooking }) {
       <div className="mt-4 grid grid-cols-2 gap-3">
         <Link
           className="flex min-h-11 items-center justify-center rounded-md border border-[var(--outline)] bg-[var(--surface-container-lowest)] px-4 text-label-md"
-          href="/customer/chat-thread"
+          href={`/customer/chat-thread?providerId=${booking.providerId}`}
         >
           Message
         </Link>

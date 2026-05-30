@@ -316,19 +316,41 @@ model Booking {
 }
 
 model Conversation {
-  id            String   @id @default(cuid())
-  providerId    String
-  provider      ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  id             String   @id @default(cuid())
+  providerId     String
+  provider       ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
-  customerName  String
-  lastMessage   String   @default("")
-  lastMessageAt DateTime @default(now())
-  unreadCount   Int      @default(0)
+  customerName   String
+  customerUserId String?
+  lastMessage    String   @default("")
+  lastMessageAt  DateTime @default(now())
+  unreadCount    Int      @default(0)
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  messages       Message[]
 
   @@index([providerId, lastMessageAt])
+  @@index([customerUserId])
+}
+
+enum MessageSender {
+  customer
+  provider
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  sender         MessageSender
+  body           String
+
+  createdAt      DateTime @default(now())
+
+  @@index([conversationId, createdAt])
 }
 
 model Review {

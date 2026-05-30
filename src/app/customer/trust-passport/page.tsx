@@ -401,7 +401,7 @@ function ActionFooter({ providerId }: { providerId: string }) {
         </button>
         <Link
           className="flex min-h-12 items-center justify-center gap-2 rounded-md border border-[var(--primary)] bg-[var(--surface-container-lowest)] px-4 text-label-lg"
-          href="/customer/chat-thread"
+          href={`/customer/chat-thread?providerId=${providerId}`}
         >
           <MessageSquare className="h-4 w-4" />
           Chat

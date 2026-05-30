@@ -60,6 +60,7 @@ export async function GET(request: NextRequest) {
       orderBy: { scheduledAt: "desc" },
       select: {
         id: true,
+        providerId: true,
         serviceTitle: true,
         scheduledAt: true,
         status: true,
@@ -77,6 +78,7 @@ export async function GET(request: NextRequest) {
         const providerName = booking.provider.displayName ?? "Provider";
         return {
           id: booking.id,
+          providerId: booking.providerId,
           providerName,
           providerInitials: initialsOf(providerName),
           service: booking.provider.category ? serviceLabel(booking.provider.category) : "Service",
