@@ -1,14 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
-  BarChart3,
   Bell,
   BriefcaseBusiness,
-  CalendarClock,
-  ChevronRight,
   Clock3,
   IndianRupee,
   LayoutDashboard,
@@ -16,16 +12,9 @@ import {
   MessageSquare,
   ShieldCheck,
   Star,
-  TrendingUp,
   User,
 } from "lucide-react";
-import {
-  loadProviderDashboard,
-  type ProviderDashboardResponse,
-} from "@/services/provider-dashboard-service";
-
-const tabs = ["Leads", "Jobs", "Messages", "Performance"] as const;
-type Tab = (typeof tabs)[number];
+import { loadProviderDashboard, type ProviderDashboardResponse } from "@/services/provider-dashboard-service";
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong.";
@@ -36,11 +25,9 @@ export default function ProviderDashboardPage() {
   const [data, setData] = useState<ProviderDashboardResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState<Tab>("Leads");
 
   useEffect(() => {
     let cancelled = false;
-
     loadProviderDashboard()
       .then((response) => {
         if (cancelled) return;
@@ -75,18 +62,21 @@ export default function ProviderDashboardPage() {
           value: String(summary!.newLeads),
           detail: `${summary!.urgentToday} urgent today`,
           icon: ListChecks,
+          href: "/provider/leads",
         },
         {
           label: "Accepted Jobs",
           value: String(summary!.acceptedJobs),
           detail: `${summary!.jobsThisWeek} this week`,
           icon: BriefcaseBusiness,
+          href: "/provider/todays-jobs",
         },
         {
           label: "Earnings",
           value: summary!.earningsThisMonthLabel,
           detail: "This month",
           icon: IndianRupee,
+          href: "/provider/earnings-performance",
         },
         {
           label: "Response Rate",
@@ -152,7 +142,7 @@ export default function ProviderDashboardPage() {
                       Good morning, {data.greetingName}
                     </h2>
                     <p className="mt-1 text-body-sm text-[var(--on-surface-variant)]">
-                      Review leads, manage jobs, reply fast, and track performance.
+                      Tap a card or use the bottom navigation to manage your work.
                     </p>
                   </div>
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--primary)] text-[var(--on-primary)]">
@@ -187,114 +177,6 @@ export default function ProviderDashboardPage() {
                   );
                 })}
               </section>
-
-              <section className="mt-5 border-b border-[var(--outline-variant)]">
-                <div className="no-scrollbar -mx-1 flex gap-1 overflow-x-auto px-1">
-                  {tabs.map((tab) => (
-                    <button
-                      className={
-                        activeTab === tab
-                          ? "min-h-11 shrink-0 border-b-2 border-[var(--primary)] px-4 text-label-lg text-[var(--primary)]"
-                          : "min-h-11 shrink-0 px-4 text-label-lg text-[var(--on-surface-variant)]"
-                      }
-                      key={tab}
-                      onClick={() => setActiveTab(tab)}
-                      type="button"
-                    >
-                      {tab}
-                    </button>
-                  ))}
-                </div>
-              </section>
-
-              {activeTab === "Leads" ? (
-                <section className="mt-4 flex flex-col gap-3">
-                  {data.leads.length === 0 ? (
-                    <EmptyState message="No new leads right now. We will notify you when a customer reaches out." />
-                  ) : (
-                    data.leads.map((lead) => (
-                      <article
-                        className="rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-4"
-                        key={lead.id}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <h3 className="text-label-lg text-[var(--on-surface)]">{lead.title}</h3>
-                            {lead.meta ? (
-                              <p className="mt-1 text-body-sm text-[var(--on-surface-variant)]">{lead.meta}</p>
-                            ) : null}
-                          </div>
-                          <span className="shrink-0 rounded bg-[var(--surface-container)] px-2 py-1 text-label-sm text-[var(--on-surface)]">
-                            {lead.urgent ? "Urgent" : lead.status}
-                          </span>
-                        </div>
-                        <div className="mt-4 flex items-center justify-between gap-3 border-t border-[var(--surface-variant)] pt-3">
-                          <div>
-                            <p className="text-label-sm text-[var(--on-surface-variant)]">Customer budget</p>
-                            <p className="text-label-lg text-[var(--on-surface)]">{lead.budget}</p>
-                          </div>
-                          <button
-                            className="min-h-10 rounded-md bg-[var(--primary)] px-4 text-label-md text-[var(--on-primary)]"
-                            onClick={() => router.push("/provider/lead-details")}
-                            type="button"
-                          >
-                            View Lead
-                          </button>
-                        </div>
-                      </article>
-                    ))
-                  )}
-                </section>
-              ) : null}
-
-              {activeTab === "Jobs" ? (
-                <DashboardPanel className="mt-4" title="Jobs" icon={CalendarClock}>
-                  {data.jobs.length === 0 ? (
-                    <EmptyState message="No upcoming jobs scheduled." />
-                  ) : (
-                    data.jobs.map((job) => (
-                      <CompactRow key={job.id} title={job.title} detail={`${job.time} • ${job.status}`} />
-                    ))
-                  )}
-                </DashboardPanel>
-              ) : null}
-
-              {activeTab === "Messages" ? (
-                <DashboardPanel className="mt-4" title="Messages" icon={MessageSquare}>
-                  {data.messages.length === 0 ? (
-                    <EmptyState message="No messages yet." />
-                  ) : (
-                    data.messages.map((message) => (
-                      <CompactRow
-                        href={`/provider/chat-thread?conversationId=${message.id}`}
-                        key={message.id}
-                        title={`${message.name}${message.unread ? ` • ${message.unread} new` : ""}`}
-                        detail={message.text}
-                      />
-                    ))
-                  )}
-                </DashboardPanel>
-              ) : null}
-
-              {activeTab === "Performance" ? (
-                <section className="mt-4 rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-4">
-                  <div className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5 text-[var(--primary)]" />
-                    <h3 className="text-headline-sm text-[var(--on-surface)]">Performance</h3>
-                  </div>
-                  <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-                    <Metric label="Views" value={String(data.performance.views ?? 0)} />
-                    <Metric label="Accept" value={`${data.performance.acceptPct ?? 0}%`} />
-                    <Metric label="Repeat" value={`${data.performance.repeatPct ?? 0}%`} />
-                  </div>
-                  <div className="mt-4 flex items-center gap-2 rounded-md bg-[var(--surface-container-low)] p-3">
-                    <TrendingUp className="h-5 w-5 shrink-0 text-[var(--primary)]" />
-                    <p className="text-body-sm text-[var(--on-surface-variant)]">
-                      Responding within 10 minutes keeps you higher in local matches.
-                    </p>
-                  </div>
-                </section>
-              ) : null}
             </>
           ) : null}
         </section>
@@ -305,72 +187,10 @@ export default function ProviderDashboardPage() {
   );
 }
 
-function EmptyState({ message }: { message: string }) {
-  return (
-    <p className="rounded-lg border border-dashed border-[var(--outline-variant)] bg-[var(--surface-container-low)] p-4 text-body-sm text-[var(--on-surface-variant)]">
-      {message}
-    </p>
-  );
-}
-
-function DashboardPanel({
-  children,
-  className,
-  icon: Icon,
-  title,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  icon: typeof CalendarClock;
-  title: string;
-}) {
-  return (
-    <section
-      className={`rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-3 ${className ?? ""}`}
-    >
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
-          <Icon className="h-4 w-4 shrink-0 text-[var(--primary)]" />
-          <h3 className="truncate text-label-lg text-[var(--on-surface)]">{title}</h3>
-        </div>
-        <ChevronRight className="h-4 w-4 shrink-0 text-[var(--secondary)]" />
-      </div>
-      <div className="flex flex-col gap-2">{children}</div>
-    </section>
-  );
-}
-
-function CompactRow({ detail, title, href }: { detail: string; title: string; href?: string }) {
-  const className = "block border-t border-[var(--surface-variant)] pt-2 first:border-t-0 first:pt-0";
-  const content = (
-    <>
-      <p className="truncate text-label-md text-[var(--on-surface)]">{title}</p>
-      <p className="mt-0.5 line-clamp-2 text-body-sm text-[var(--on-surface-variant)]">{detail}</p>
-    </>
-  );
-
-  return href ? (
-    <Link className={className} href={href}>
-      {content}
-    </Link>
-  ) : (
-    <div className={className}>{content}</div>
-  );
-}
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md bg-[var(--surface-container-low)] px-2 py-3">
-      <p className="text-headline-sm text-[var(--on-surface)]">{value}</p>
-      <p className="mt-1 text-label-sm text-[var(--on-surface-variant)]">{label}</p>
-    </div>
-  );
-}
-
 function ProviderBottomNav({ onNavigate }: { onNavigate: (href: string) => void }) {
   const items = [
     { label: "Dashboard", href: "/provider/dashboard", icon: LayoutDashboard, active: true },
-    { label: "Leads", href: "/provider/lead-details", icon: ListChecks },
+    { label: "Leads", href: "/provider/leads", icon: ListChecks },
     { label: "Jobs", href: "/provider/todays-jobs", icon: BriefcaseBusiness },
     { label: "Messages", href: "/provider/dashboard", icon: MessageSquare },
     { label: "Earnings", href: "/provider/earnings-performance", icon: IndianRupee },

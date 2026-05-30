@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { IndianRupee, MapPin, Menu, Search, ShieldCheck, User } from "lucide-react";
+import { Check, IndianRupee, MapPin, Menu, Search, ShieldCheck, User } from "lucide-react";
 import { loadCustomerBookings, type CustomerBooking } from "@/services/customer-booking-service";
 
 const tabs = ["Upcoming", "Active", "Completed"] as const;
@@ -173,6 +173,42 @@ function BookingCard({ booking }: { booking: CustomerBooking }) {
           </p>
         ) : null}
       </div>
+
+      {booking.otp ? (
+        <div className="mt-3 rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-low)] p-3">
+          <p className="text-label-sm uppercase text-[var(--on-surface-variant)]">Booking OTP</p>
+          <div className="mt-1 flex flex-wrap items-center gap-3">
+            <span className="rounded-md bg-[var(--surface-container)] px-3 py-1.5 text-headline-sm tracking-[0.3em]">
+              {booking.otp}
+            </span>
+            <span className="text-body-sm text-[var(--on-surface-variant)]">Share with your provider to start.</span>
+          </div>
+        </div>
+      ) : null}
+
+      {booking.checklist.length ? (
+        <div className="mt-3 rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-low)] p-3">
+          <p className="text-label-sm uppercase text-[var(--on-surface-variant)]">Service progress</p>
+          <div className="mt-2 flex flex-col gap-1.5">
+            {booking.checklist.map((item) => (
+              <div className="flex items-center gap-2 text-body-sm" key={item.key}>
+                <span
+                  className={
+                    item.done
+                      ? "flex h-4 w-4 items-center justify-center rounded-full bg-[var(--primary)] text-[var(--on-primary)]"
+                      : "flex h-4 w-4 items-center justify-center rounded-full border border-[var(--outline)]"
+                  }
+                >
+                  {item.done ? <Check className="h-3 w-3" /> : null}
+                </span>
+                <span className={item.done ? "text-[var(--on-surface)]" : "text-[var(--on-surface-variant)]"}>
+                  {item.label}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <div className="mt-4 grid grid-cols-2 gap-3">
         <Link

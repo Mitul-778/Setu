@@ -50,6 +50,8 @@ export type CustomerBooking = {
   status: "accepted" | "confirmed" | "in_progress" | "completed" | "cancelled";
   statusLabel: string;
   bucket: "upcoming" | "active" | "completed";
+  otp: string | null;
+  checklist: { key: string; label: string; done: boolean }[];
 };
 
 export type CustomerBookingsResponse = {

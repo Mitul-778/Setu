@@ -284,6 +284,7 @@ model Lead {
   status            LeadStatus @default(new)
   urgent            Boolean  @default(false)
   respondedAt       DateTime?
+  bookingId         String?
 
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -306,6 +307,11 @@ model Booking {
   address          String?
   notes            String   @default("")
   isRepeatCustomer Boolean  @default(false)
+
+  otp              String?
+  checklist        Json     @default("[]")
+  startedAt        DateTime?
+  completedAt      DateTime?
 
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt

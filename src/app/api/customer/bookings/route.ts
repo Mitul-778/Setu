@@ -40,12 +40,22 @@ function whenLabel(date: Date, now: Date) {
 }
 
 const statusLabels: Record<string, string> = {
-  accepted: "Upcoming",
+  accepted: "Accepted",
   confirmed: "Upcoming",
   in_progress: "In progress",
   completed: "Completed",
   cancelled: "Cancelled",
 };
+
+type ChecklistItem = { key: string; label: string; done: boolean };
+
+function readChecklist(value: unknown): ChecklistItem[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null)
+    .map((item) => ({ key: String(item.key ?? ""), label: String(item.label ?? ""), done: Boolean(item.done) }))
+    .filter((item) => item.key);
+}
 
 export async function GET(request: NextRequest) {
   const userId = request.cookies.get("setu_user_id")?.value;
@@ -66,6 +76,8 @@ export async function GET(request: NextRequest) {
         status: true,
         amountInr: true,
         address: true,
+        otp: true,
+        checklist: true,
         provider: { select: { displayName: true, category: true } },
       },
     });
@@ -89,6 +101,8 @@ export async function GET(request: NextRequest) {
           status: booking.status,
           statusLabel: statusLabels[booking.status] ?? booking.status,
           bucket: bucketFor(booking.status),
+          otp: booking.status === "accepted" ? booking.otp : null,
+          checklist: booking.status === "in_progress" ? readChecklist(booking.checklist) : [],
         };
       }),
     });
@@ -171,6 +185,7 @@ export async function POST(request: NextRequest) {
           budgetInr: amountInr > 0 ? amountInr : null,
           note: notes,
           status: "new",
+          bookingId: booking.id,
         },
       });
     } catch (leadError) {
