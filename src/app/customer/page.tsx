@@ -175,7 +175,6 @@ const newcomerProviders = [
 
 const navItems = [
   { label: "Home", icon: Home, href: "/customer", active: true },
-  { label: "Requests", icon: ShieldCheck, href: "/customer/request" },
   { label: "Bookings", icon: CalendarDays, href: "/customer/bookings" },
   { label: "Messages", icon: MessageSquare, href: "/customer/messages" },
   { label: "Profile", icon: User, href: "/profile" },
@@ -443,7 +442,7 @@ function Avatar({ provider }: { provider: Provider }) {
 function CustomerBottomNav() {
   return (
     <nav className="fixed bottom-0 left-1/2 z-50 w-full max-w-[480px] -translate-x-1/2 border-t border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]">
-      <div className="mx-auto grid h-20 w-full max-w-[480px] grid-cols-5 px-1 pb-[env(safe-area-inset-bottom)] text-[var(--on-surface-variant)]">
+      <div className="mx-auto grid h-20 w-full max-w-[480px] grid-cols-4 px-1 pb-[env(safe-area-inset-bottom)] text-[var(--on-surface-variant)]">
         {navItems.map(({ active, href, icon: Icon, label }) => {
           const inner = (
             <>

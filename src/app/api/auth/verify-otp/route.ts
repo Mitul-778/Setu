@@ -48,7 +48,12 @@ export async function POST(request: NextRequest) {
     return "/provider";
   }
 
-  const nextPath = intent === "provider" ? providerNextPath() : "/permissions";
+  function customerNextPath() {
+    // First-time customers (no name yet) complete their profile first.
+    return user.name ? "/customer" : "/profile-setup";
+  }
+
+  const nextPath = intent === "provider" ? providerNextPath() : customerNextPath();
   const response = NextResponse.json({ ok: true, nextPath, userId: user.id, role: intent });
 
   response.cookies.set("setu_user_id", user.id, {
