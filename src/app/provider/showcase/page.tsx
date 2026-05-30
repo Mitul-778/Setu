@@ -1,4 +1,7 @@
-import Link from "next/link";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -8,31 +11,100 @@ import {
   ImagePlus,
   Info,
   Plus,
-  Quote,
   ShieldCheck,
   Utensils,
 } from "lucide-react";
 import { FileUploadPreview } from "@/components/file-upload-preview";
+import {
+  loadProviderShowcase,
+  saveProviderShowcase,
+  type ProviderShowcaseFile,
+} from "@/services/provider-showcase-service";
 
-const photoSlots = ["Bridal design", "Kitchen setup", "Event work"];
+type SavingAction = "draft" | "continue" | null;
 
-const serviceMenu = [
-  { name: "Basic service", price: "â‚¹799", note: "Good for small requests" },
-  { name: "Premium package", price: "â‚¹2,000", note: "Includes materials and travel" },
-];
-
-const testimonials = [
-  {
-    quote: "Excellent service, very professional and on time.",
-    author: "Previous Client",
-  },
-  {
-    quote: "Clear communication and neat work. Would book again.",
-    author: "Local Customer",
-  },
-];
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Something went wrong.";
+}
 
 export default function ProviderShowcasePage() {
+  const router = useRouter();
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [introImages, setIntroImages] = useState<File[]>([]);
+  const [menuImages, setMenuImages] = useState<File[]>([]);
+  const [fssaiDocuments, setFssaiDocuments] = useState<File[]>([]);
+  const [certificates, setCertificates] = useState<File[]>([]);
+  const [portfolio, setPortfolio] = useState<ProviderShowcaseFile[]>([]);
+  const [documents, setDocuments] = useState<ProviderShowcaseFile[]>([]);
+  const [requiresFssai, setRequiresFssai] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [savingAction, setSavingAction] = useState<SavingAction>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    loadProviderShowcase()
+      .then((data) => {
+        if (cancelled) return;
+        setPortfolio(data.portfolio);
+        setDocuments(data.documents);
+        setRequiresFssai(data.requiresFssai);
+        setError("");
+      })
+      .catch((loadError) => {
+        if (cancelled) return;
+        setError(getErrorMessage(loadError));
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function persistShowcase(action: Exclude<SavingAction, null>) {
+    setSavingAction(action);
+    setError("");
+
+    try {
+      const saved = await saveProviderShowcase({
+        photos,
+        introImages,
+        menuImages,
+        fssaiDocuments: requiresFssai ? fssaiDocuments : [],
+        certificates,
+      });
+
+      setPortfolio(saved.portfolio);
+      setDocuments(saved.documents);
+      setRequiresFssai(saved.requiresFssai);
+      setPhotos([]);
+      setIntroImages([]);
+      setMenuImages([]);
+      setFssaiDocuments([]);
+      setCertificates([]);
+
+      if (action === "continue") {
+        router.push(saved.nextPath);
+      }
+    } catch (saveError) {
+      setError(getErrorMessage(saveError));
+    } finally {
+      setSavingAction(null);
+    }
+  }
+
+  const isBusy = isLoading || savingAction !== null;
+  const savedPhotos = portfolio.filter((item) => item.type === "photo");
+  const remainingPhotoSlots = Math.max(0, 5 - savedPhotos.length);
+  const savedIntroImages = portfolio.filter((item) => item.type === "intro_image");
+  const savedMenuImages = portfolio.filter((item) => item.type === "service_menu");
+  const savedFssai = requiresFssai ? documents.filter((item) => item.type === "fssai") : [];
+  const savedCertificates = documents.filter((item) => item.type === "certificate");
+
   return (
     <main className="min-h-dvh overflow-x-hidden bg-black text-[var(--on-surface)]">
       <div className="mx-auto min-h-dvh w-full min-w-0 max-w-[480px] overflow-x-hidden bg-[var(--surface)] pb-[calc(92px+env(safe-area-inset-bottom))]">
@@ -41,6 +113,7 @@ export default function ProviderShowcasePage() {
             <button
               aria-label="Go back"
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[var(--on-surface)]"
+              onClick={() => router.back()}
               type="button"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -51,6 +124,7 @@ export default function ProviderShowcasePage() {
             <button
               aria-label="Verification status"
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[var(--on-surface-variant)]"
+              onClick={() => router.push("/provider/verification-status")}
               type="button"
             >
               <ShieldCheck className="h-5 w-5" />
@@ -85,32 +159,39 @@ export default function ProviderShowcasePage() {
             </p>
           </div>
 
+          {isLoading ? (
+            <div className="mt-4 rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-low)] px-3 py-2 text-body-sm text-[var(--on-surface-variant)]">
+              Loading saved showcase details...
+            </div>
+          ) : null}
+
+          {error ? (
+            <div className="mt-4 rounded-md border border-[var(--error)] bg-[var(--error-container)] px-3 py-2 text-body-sm text-[var(--on-error-container)]">
+              {error}
+            </div>
+          ) : null}
+
           <section className="mt-6">
             <SectionTitle title="Photos" badge="Required" />
             <div className="mt-3 grid grid-cols-3 gap-2">
-              <FileUploadPreview
-                accept="image/*"
-                className="contents"
-                emptyClassName="flex aspect-square cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-center"
-                icon={ImagePlus}
-                label="Upload"
-                multiple
-                previewClassName="contents"
-                previewItemClassName="relative aspect-square overflow-hidden rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]"
-              />
-              {photoSlots.map((label) => (
-                <div
-                  className="aspect-square rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container)] p-2"
-                  key={label}
-                >
-                  <div className="flex h-full flex-col justify-end rounded bg-[var(--surface-container-high)] p-2">
-                    <span className="text-label-sm text-[var(--on-surface)]">{label}</span>
-                  </div>
-                </div>
-              ))}
+              {remainingPhotoSlots ? (
+                <FileUploadPreview
+                  accept="image/*"
+                  className="contents"
+                  emptyClassName="flex aspect-square cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-center"
+                  icon={ImagePlus}
+                  label={`Upload ${remainingPhotoSlots}`}
+                  maxFiles={remainingPhotoSlots}
+                  multiple
+                  onFilesChange={setPhotos}
+                  previewClassName="contents"
+                  previewItemClassName="relative aspect-square overflow-hidden rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]"
+                />
+              ) : null}
+              {savedPhotos.slice(0, 5).map((item) => <SavedSquareImage item={item} key={item.id} />)}
             </div>
             <p className="mt-2 text-body-sm text-[var(--on-surface-variant)]">
-              Add at least 3 photos of previous work, workspace, tools, or finished service results.
+              Add up to 5 photos of previous work, workspace, tools, or finished service results.
             </p>
           </section>
 
@@ -125,8 +206,9 @@ export default function ProviderShowcasePage() {
               hint="Clear profile or workspace image"
               icon={ImagePlus}
               label="Upload intro image"
-              previewItemClassName="relative min-h-24 overflow-hidden rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]"
+              onFilesChange={setIntroImages}
             />
+            <SavedMediaList items={savedIntroImages} />
           </section>
 
           <Divider />
@@ -139,27 +221,10 @@ export default function ProviderShowcasePage() {
               emptyClassName="flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-label-lg"
               icon={FileText}
               label="Upload Menu Image"
+              onFilesChange={setMenuImages}
+              previewMode="file-name"
             />
-            <div className="mt-3 flex flex-col gap-2">
-              {serviceMenu.map(({ name, note, price }) => (
-                <article
-                  className="rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-3"
-                  key={name}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-label-lg text-[var(--on-surface)]">{name}</h3>
-                      <p className="mt-1 text-body-sm text-[var(--on-surface-variant)]">{note}</p>
-                    </div>
-                    <span className="shrink-0 text-label-lg text-[var(--primary)]">{price}</span>
-                  </div>
-                </article>
-              ))}
-            </div>
-            <button className="mt-2 flex min-h-10 items-center gap-2 text-label-md text-[var(--primary)]" type="button">
-              <Plus className="h-4 w-4" />
-              Add package manually
-            </button>
+            <SavedMediaList items={savedMenuImages} showThumbnail={false} />
           </section>
 
           <Divider />
@@ -167,6 +232,7 @@ export default function ProviderShowcasePage() {
           <section>
             <SectionTitle title="Professional Documents" badge="Trust" />
             <div className="mt-3 flex flex-col gap-3">
+              {requiresFssai ? (
               <article className="rounded-lg border-2 border-[var(--primary)] bg-[var(--surface-container-lowest)] p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
@@ -184,24 +250,17 @@ export default function ProviderShowcasePage() {
                     Food
                   </span>
                 </div>
-                <div className="mt-4 rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-low)] p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-label-md text-[var(--on-surface)]">FSSAI_Cert_2023.jpg</p>
-                      <p className="text-body-sm text-[var(--on-surface-variant)]">1.2 MB</p>
-                    </div>
-                    <Check className="h-5 w-5 shrink-0 text-[var(--primary)]" />
-                  </div>
-                </div>
+                <SavedDocumentList items={savedFssai} />
                 <FileUploadPreview
                   accept="image/*"
                   className="mt-3 flex flex-col gap-3"
                   emptyClassName="flex min-h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-[var(--outline-variant)] bg-[var(--surface)] text-label-md"
                   icon={FileText}
                   label="Upload / Replace FSSAI"
+                  onFilesChange={setFssaiDocuments}
                 />
               </article>
-
+              ) : null}
               <article className="rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-4">
                 <div className="flex items-start gap-3">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--surface-container)] text-[var(--primary)]">
@@ -214,6 +273,7 @@ export default function ProviderShowcasePage() {
                     </p>
                   </div>
                 </div>
+                <SavedDocumentList items={savedCertificates} />
                 <FileUploadPreview
                   accept="image/*"
                   className="mt-3 flex flex-col gap-3"
@@ -221,39 +281,9 @@ export default function ProviderShowcasePage() {
                   icon={Plus}
                   label="Upload Document"
                   multiple
+                  onFilesChange={setCertificates}
                 />
               </article>
-            </div>
-          </section>
-
-          <Divider />
-
-          <section className="mb-6">
-            <SectionTitle title="Customer Testimonials" badge="Optional" />
-            <p className="mt-2 text-body-sm text-[var(--on-surface-variant)]">
-              Upload screenshots of reviews from other platforms or type them in.
-            </p>
-            <div className="no-scrollbar mt-3 flex gap-3 overflow-x-auto pb-1">
-              <FileUploadPreview
-                accept="image/*"
-                className="contents"
-                emptyClassName="flex aspect-square w-32 shrink-0 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-center"
-                icon={ImagePlus}
-                label="Add Screenshot"
-                multiple
-                previewClassName="contents"
-                previewItemClassName="relative aspect-square w-32 shrink-0 overflow-hidden rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]"
-              />
-              {testimonials.map(({ author, quote }) => (
-                <article
-                  className="flex aspect-square w-40 shrink-0 flex-col rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-3"
-                  key={quote}
-                >
-                  <Quote className="h-5 w-5 text-[var(--on-surface-variant)]" />
-                  <p className="mt-2 line-clamp-4 text-body-sm text-[var(--on-surface)]">{quote}</p>
-                  <p className="mt-auto text-label-sm text-[var(--on-surface-variant)]">- {author}</p>
-                </article>
-              ))}
             </div>
           </section>
 
@@ -261,7 +291,7 @@ export default function ProviderShowcasePage() {
             <div className="flex items-start gap-3">
               <Info className="mt-0.5 h-5 w-5 shrink-0 text-[var(--on-surface-variant)]" />
               <p className="text-body-sm text-[var(--on-surface-variant)]">
-                Strong photos, menus, documents, and testimonials increase customer confidence before booking.
+                Strong photos, menus, and documents increase customer confidence before booking.
               </p>
             </div>
           </section>
@@ -270,18 +300,22 @@ export default function ProviderShowcasePage() {
         <footer className="fixed bottom-0 left-1/2 z-50 w-full max-w-[480px] -translate-x-1/2 border-t border-[var(--outline-variant)] bg-[var(--surface)] px-4 py-3">
           <div className="grid grid-cols-[1fr_1.35fr] gap-3">
             <button
-              className="min-h-12 rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-4 text-label-lg text-[var(--on-surface-variant)]"
+              className="min-h-12 rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-4 text-label-lg text-[var(--on-surface-variant)] disabled:opacity-60"
+              disabled={isBusy}
+              onClick={() => persistShowcase("draft")}
               type="button"
             >
-              Save Draft
+              {savingAction === "draft" ? "Saving..." : "Save Draft"}
             </button>
-            <Link
-              className="flex min-h-12 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 text-label-lg text-[var(--on-primary)]"
-              href="/provider/service-settings"
+            <button
+              className="flex min-h-12 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 text-label-lg text-[var(--on-primary)] disabled:opacity-60"
+              disabled={isBusy}
+              onClick={() => persistShowcase("continue")}
+              type="button"
             >
-              <span>Continue</span>
+              <span>{savingAction === "continue" ? "Saving..." : "Continue"}</span>
               <ArrowRight className="h-5 w-5" />
-            </Link>
+            </button>
           </div>
         </footer>
       </div>
@@ -296,6 +330,73 @@ function SectionTitle({ badge, title }: { badge: string; title: string }) {
       <span className="rounded bg-[var(--surface-container-low)] px-2 py-1 text-label-sm text-[var(--on-surface-variant)]">
         {badge}
       </span>
+    </div>
+  );
+}
+
+function SavedSquareImage({ item }: { item: ProviderShowcaseFile }) {
+  return (
+    <div className="relative aspect-square overflow-hidden rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]">
+      <img alt={item.label} className="h-full w-full object-cover grayscale" src={item.url} />
+      <span className="absolute bottom-1 left-1 right-1 truncate rounded bg-[var(--surface-container-lowest)]/90 px-1.5 py-1 text-label-sm text-[var(--on-surface)]">
+        Saved
+      </span>
+    </div>
+  );
+}
+
+function SavedWideImage({ item }: { item: ProviderShowcaseFile }) {
+  return (
+    <div className="relative aspect-square w-32 shrink-0 overflow-hidden rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]">
+      <img alt={item.label} className="h-full w-full object-cover grayscale" src={item.url} />
+    </div>
+  );
+}
+
+function SavedMediaList({ items, showThumbnail = true }: { items: ProviderShowcaseFile[]; showThumbnail?: boolean }) {
+  if (!items.length) return null;
+
+  return (
+    <div className="mt-3 flex flex-col gap-2">
+      {items.map((item) => (
+        <a
+          className="flex min-h-12 items-center gap-3 rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-2 text-label-md text-[var(--on-surface)]"
+          href={item.url}
+          key={item.id}
+          rel="noreferrer"
+          target="_blank"
+        >
+          {showThumbnail ? <img alt={item.label} className="h-10 w-10 rounded object-cover grayscale" src={item.url} /> : <FileText className="h-5 w-5 shrink-0 text-[var(--on-surface-variant)]" />}
+          <span className="min-w-0 flex-1 truncate">{item.fileName ?? item.label}</span>
+          <Check className="h-4 w-4 shrink-0" />
+        </a>
+      ))}
+    </div>
+  );
+}
+
+function SavedDocumentList({ items }: { items: ProviderShowcaseFile[] }) {
+  if (!items.length) return null;
+
+  return (
+    <div className="mt-4 flex flex-col gap-2">
+      {items.map((item) => (
+        <a
+          className="rounded-md border border-[var(--outline-variant)] bg-[var(--surface-container-low)] p-3"
+          href={item.url}
+          key={item.id}
+          rel="noreferrer"
+          target="_blank"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-label-md text-[var(--on-surface)]">{item.fileName ?? item.label}</p>
+              <p className="text-body-sm text-[var(--on-surface-variant)]">Saved document</p>
+            </div>
+            <Check className="h-5 w-5 shrink-0 text-[var(--primary)]" />
+          </div>
+        </a>
+      ))}
     </div>
   );
 }
