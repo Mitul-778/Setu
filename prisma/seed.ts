@@ -75,6 +75,8 @@ async function main() {
           area: "Indiranagar",
           neighborhood: "100 Feet Road",
           serviceRadiusKm: 10,
+          lat: 12.9716,
+          lng: 77.5946,
           onboardingStatus: "submitted",
           profileViews: 248,
           submittedAt: new Date(),
@@ -259,6 +261,117 @@ async function main() {
     },
   });
 
+  // Approved, geo-located providers so the customer home "Trusted near you"
+  // rail has data and demonstrates city-based filtering.
+  const approvedProviders = [
+    {
+      phone: "+919800000001",
+      name: "Asha Khan",
+      category: "mehendi",
+      bio: "Bridal and party mehendi artist serving South Bangalore.",
+      serviceNames: ["Bridal Mehendi", "Party Mehendi"],
+      languages: ["Hindi", "English"],
+      years: 4,
+      city: "Bangalore",
+      area: "Koramangala",
+      lat: 12.9352,
+      lng: 77.6245,
+      trustScore: 82,
+      price: 799,
+      reviews: [5, 5, 4],
+    },
+    {
+      phone: "+919800000002",
+      name: "Vikram Rao",
+      category: "electrician",
+      bio: "Licensed electrician for repairs, installations and emergencies.",
+      serviceNames: ["Switch Repair", "Fan Installation"],
+      languages: ["Kannada", "Hindi"],
+      years: 6,
+      city: "Bangalore",
+      area: "Whitefield",
+      lat: 12.9698,
+      lng: 77.75,
+      trustScore: 74,
+      price: 399,
+      reviews: [5, 4, 5],
+    },
+    {
+      phone: "+919800000003",
+      name: "Imran Shaikh",
+      category: "makeup",
+      bio: "Professional makeup artist for weddings and events in Mumbai.",
+      serviceNames: ["Party Makeup", "Bridal Makeup"],
+      languages: ["Hindi", "Marathi", "English"],
+      years: 5,
+      city: "Mumbai",
+      area: "Andheri",
+      lat: 19.1197,
+      lng: 72.8468,
+      trustScore: 78,
+      price: 1499,
+      reviews: [5, 4, 5],
+    },
+  ];
+
+  for (const provider of approvedProviders) {
+    await db.user.create({
+      data: {
+        role: "provider",
+        phone: provider.phone,
+        name: provider.name,
+        preferredLang: "en",
+        city: provider.city,
+        providerProfile: {
+          create: {
+            displayName: provider.name,
+            category: provider.category,
+            bio: provider.bio,
+            serviceIds: [provider.category],
+            serviceNames: provider.serviceNames,
+            languages: provider.languages,
+            experienceLevel: "3-5",
+            yearsExperience: provider.years,
+            city: provider.city,
+            area: provider.area,
+            lat: provider.lat,
+            lng: provider.lng,
+            serviceRadiusKm: 12,
+            onboardingStatus: "approved",
+            submittedAt: daysAgo(7),
+            approvedAt: daysAgo(5),
+            trustScore: provider.trustScore,
+            packages: {
+              create: [
+                {
+                  name: "Standard Package",
+                  description: "Popular booking option.",
+                  priceInr: provider.price,
+                  durationMin: 120,
+                },
+              ],
+            },
+            reviews: {
+              create: provider.reviews.map((rating, index) => ({
+                customerName: `Customer ${index + 1}`,
+                rating,
+                comment: "Great service, highly recommended.",
+              })),
+            },
+            verification: {
+              create: {
+                status: "approved",
+                reviewedAt: daysAgo(5),
+                submittedAt: daysAgo(7),
+                missingItems: [],
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
   await db.user.create({
     data: {
       role: "customer",
@@ -266,10 +379,15 @@ async function main() {
       name: "Anita S.",
       preferredLang: "en",
       city: "Bangalore",
+      lat: 12.9716,
+      lng: 77.5946,
     },
   });
 
-  console.log("Seeded Setu demo data", { providerUserId: providerUser.id });
+  console.log("Seeded Setu demo data", {
+    providerUserId: providerUser.id,
+    approvedProviders: approvedProviders.length,
+  });
 }
 
 main()

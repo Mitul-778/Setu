@@ -4,25 +4,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import {
-  ArrowLeft,
-  BellRing,
-  Bug,
-  ChevronRight,
-  Hammer,
-  Leaf,
-  MapPin,
-  Mic,
-  Paintbrush,
-  PlugZap,
-  Search,
-  ShieldCheck,
-  Truck,
-  Wrench,
-} from "lucide-react";
+import { ArrowLeft, BellRing, ChevronRight, MapPin, Mic, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { googleMapsApiKey, loadGoogleMapsScript } from "@/lib/google-maps";
 import { saveCustomerLocation } from "@/services/customer-location-service";
+import { loadCustomerInterests, saveCustomerInterests } from "@/services/customer-interests-service";
+import { isServiceId, SERVICES, type ServiceId } from "@/lib/services";
 
 type SetupMode = "permissions" | "location" | "interests";
 
@@ -63,18 +50,6 @@ const neighborhoods = [
   "Whitefield",
   "Jayanagar",
   "HSR Layout",
-];
-
-const serviceCategories = [
-  { label: "Plumbing", icon: Wrench },
-  { label: "Electrical", icon: PlugZap },
-  { label: "Cleaning", icon: ShieldCheck },
-  { label: "Pest Control", icon: Bug },
-  { label: "Carpentry", icon: Hammer },
-  { label: "Appliance Repair", icon: Wrench },
-  { label: "Gardening", icon: Leaf },
-  { label: "Painting", icon: Paintbrush },
-  { label: "Moving", icon: Truck },
 ];
 
 export function SetupFlow({ mode }: { mode: SetupMode }) {
@@ -404,14 +379,43 @@ function LocationScreen() {
 }
 
 function InterestsScreen() {
-  const [selected, setSelected] = useState(["Plumbing", "Cleaning"]);
+  const router = useRouter();
+  const [selected, setSelected] = useState<ServiceId[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
-  function toggleCategory(label: string) {
+  useEffect(() => {
+    let cancelled = false;
+    loadCustomerInterests()
+      .then((data) => {
+        if (cancelled) return;
+        setSelected(data.interests.filter(isServiceId));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function toggleService(id: ServiceId) {
     setSelected((current) =>
-      current.includes(label)
-        ? current.filter((item) => item !== label)
-        : [...current, label]
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id]
     );
+  }
+
+  async function handleFinish() {
+    if (saving) return;
+    setSaving(true);
+    setError("");
+    try {
+      const result = await saveCustomerInterests(selected);
+      router.push(result.nextPath ?? "/customer");
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Could not save your interests.");
+      setSaving(false);
+    }
   }
 
   return (
@@ -426,8 +430,8 @@ function InterestsScreen() {
       </div>
 
       <div className="mt-6 flex flex-wrap gap-2">
-        {serviceCategories.map(({ label, icon: Icon }) => {
-          const isSelected = selected.includes(label);
+        {SERVICES.map(({ id, label, icon: Icon }) => {
+          const isSelected = selected.includes(id);
           return (
             <button
               className={cn(
@@ -436,8 +440,8 @@ function InterestsScreen() {
                   ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--on-primary)]"
                   : "border-[var(--outline)] bg-[var(--surface)] text-[var(--on-surface)]"
               )}
-              key={label}
-              onClick={() => toggleCategory(label)}
+              key={id}
+              onClick={() => toggleService(id)}
               type="button"
             >
               <Icon className="h-4 w-4" />
@@ -447,13 +451,21 @@ function InterestsScreen() {
         })}
       </div>
 
+      {error ? (
+        <p className="mt-4 rounded-md border border-[var(--error)] bg-[var(--error-container)] px-3 py-2 text-body-sm text-[var(--on-error-container)]">
+          {error}
+        </p>
+      ) : null}
+
       <div className="mt-auto pt-8">
-        <Link
-          className="flex min-h-12 items-center justify-center rounded-md bg-[var(--primary)] text-label-lg text-[var(--on-primary)]"
-          href="/customer"
+        <button
+          className="flex min-h-12 w-full items-center justify-center rounded-md bg-[var(--primary)] text-label-lg text-[var(--on-primary)] disabled:opacity-60"
+          disabled={saving}
+          onClick={handleFinish}
+          type="button"
         >
-          Finish Setup
-        </Link>
+          {saving ? "Saving..." : "Finish Setup"}
+        </button>
       </div>
     </section>
   );

@@ -52,6 +52,7 @@ model User {
   area          String?
   lat           Float?
   lng           Float?
+  interests     Json     @default("[]")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

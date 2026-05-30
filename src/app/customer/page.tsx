@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import {
   CalendarDays,
   ChevronDown,
@@ -13,39 +14,133 @@ import {
   Star,
   User,
 } from "lucide-react";
+import { db } from "@/lib/db";
+import { serviceLabel } from "@/lib/services";
 
 const categories = ["All", "Mehendi", "Makeup", "Plumbing", "Cleaning"];
 
-const trustedProviders = [
-  {
-    name: "Ramesh Kumar",
-    service: "Expert Plumber",
-    exp: "5 yrs",
-    rating: "4.8",
-    tags: ["Hindi", "Kannada", "Available Now"],
-    price: "299",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuCTPsdCc7TJwWFI3k97TZfw6gSeorTbHt_m8f_cnaLzZ6lmoSrNBagPdnYbIbL03BZdn9dZaKYpwnhVEaTxHuCzBU6mVjS21bty6Gtu9mBo8hHsGDtksgd7PGO2hFmwP2RkELUMzxNGogt925AbGUba_nBzJCJ1qxJ6PzHnGDxM8rQgHxHEoXDPb9jilGrfIiIbT1iP5qcCILOHNWEkYGyQVWnW5enbrVPAdW-5up3I4wZq38AnlYtzSCaqWOLGYPJDlCPvgy_Cqr0",
-  },
-  {
-    name: "Asha Khan",
-    service: "Mehendi Artist",
-    exp: "4 yrs",
-    rating: "4.9",
-    tags: ["Hindi", "English", "Available Now"],
-    price: "799",
-    initials: "AK",
-  },
-  {
-    name: "Imran Shaikh",
-    service: "AC Technician",
-    exp: "6 yrs",
-    rating: "4.7",
-    tags: ["Hindi", "Marathi"],
-    price: "399",
-    initials: "IS",
-  },
-];
+const nearbyRadiusKm = 60;
+
+const cityAliases: Record<string, string> = {
+  bengaluru: "bangalore",
+  bangalore: "bangalore",
+  "delhi ncr": "delhi",
+  delhi: "delhi",
+  mumbai: "mumbai",
+  hyderabad: "hyderabad",
+  chennai: "chennai",
+  kolkata: "kolkata",
+  pune: "pune",
+};
+
+function cityKey(value?: string | null) {
+  if (!value) return "";
+  const lower = value.toLowerCase();
+  for (const alias of Object.keys(cityAliases)) {
+    if (lower.includes(alias)) return cityAliases[alias];
+  }
+  return lower.trim();
+}
+
+function distanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const toRad = (value: number) => (value * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+  const h =
+    Math.sin(dLat / 2) ** 2 + Math.sin(dLng / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
+  return earthRadiusKm * 2 * Math.asin(Math.sqrt(h));
+}
+
+function initialsOf(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+type CustomerLocation = { city: string | null; area: string | null; lat: number | null; lng: number | null };
+
+async function getCustomerHome() {
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("setu_user_id")?.value;
+
+  let user: CustomerLocation | null = null;
+  if (userId) {
+    user = await db.user.findUnique({
+      where: { id: userId },
+      select: { city: true, area: true, lat: true, lng: true },
+    });
+  }
+
+  const providers = await db.providerProfile.findMany({
+    where: { onboardingStatus: "approved" },
+    select: {
+      id: true,
+      displayName: true,
+      category: true,
+      yearsExperience: true,
+      languages: true,
+      city: true,
+      lat: true,
+      lng: true,
+      trustScore: true,
+      packages: { where: { active: true }, select: { priceInr: true }, orderBy: { priceInr: "asc" }, take: 1 },
+      reviews: { select: { rating: true } },
+      portfolio: {
+        where: { type: "photo" },
+        select: { mediaUrl: true, uploadedFile: { select: { publicUrl: true } } },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+      },
+    },
+    orderBy: { trustScore: "desc" },
+    take: 50,
+  });
+
+  const hasUserCoords = user?.lat != null && user?.lng != null;
+
+  const trustedProviders: Provider[] = providers
+    .filter((provider) => {
+      if (hasUserCoords && provider.lat != null && provider.lng != null) {
+        return (
+          distanceKm({ lat: user!.lat!, lng: user!.lng! }, { lat: provider.lat, lng: provider.lng }) <=
+          nearbyRadiusKm
+        );
+      }
+      const userCity = cityKey(user?.city);
+      return Boolean(userCity) && userCity === cityKey(provider.city);
+    })
+    .map((provider) => {
+      const ratings = provider.reviews.map((review) => review.rating);
+      const avgRating = ratings.length ? ratings.reduce((sum, value) => sum + value, 0) / ratings.length : null;
+      const languages = Array.isArray(provider.languages) ? provider.languages.map(String) : [];
+      const price = provider.packages[0]?.priceInr;
+      const photo = provider.portfolio[0]?.mediaUrl ?? provider.portfolio[0]?.uploadedFile?.publicUrl ?? undefined;
+      const name = provider.displayName ?? "Provider";
+
+      return {
+        name,
+        service: provider.category ? serviceLabel(provider.category) : "Service Pro",
+        exp: provider.yearsExperience ? `${provider.yearsExperience} yrs` : "New",
+        tags: languages.slice(0, 3),
+        price: price != null ? String(price) : "—",
+        image: photo,
+        initials: initialsOf(name),
+        rating: avgRating != null ? avgRating.toFixed(1) : undefined,
+        badge: avgRating != null ? undefined : "Verified",
+      } satisfies Provider;
+    });
+
+  const locationLabel =
+    user?.area && user?.city ? `${user.area}, ${user.city}` : user?.city || "Set your location";
+
+  return { locationLabel, trustedProviders };
+}
 
 const newcomerProviders = [
   {
@@ -85,16 +180,22 @@ const navItems = [
   { label: "Profile", icon: User },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const { locationLabel, trustedProviders } = await getCustomerHome();
+
   return (
     <main className="min-h-dvh overflow-x-hidden bg-black text-[var(--on-surface)]">
       <div className="mx-auto min-h-dvh w-full min-w-0 max-w-[480px] overflow-x-hidden bg-[var(--surface)] pb-[calc(92px+env(safe-area-inset-bottom))]">
-        <TopBar />
+        <TopBar locationLabel={locationLabel} />
 
         <div className="flex min-w-0 flex-col gap-5 px-4 pt-5 min-[390px]:gap-6 min-[390px]:px-5 min-[390px]:pt-6">
           <SearchBar />
           <CategoryChips />
-          <ProviderRail title="Trusted near you" providers={trustedProviders} />
+          <ProviderRail
+            title="Trusted near you"
+            providers={trustedProviders}
+            emptyMessage={`No verified providers near ${locationLabel} yet. Check back soon.`}
+          />
           <ProviderRail
             compact
             title="Good for newcomers"
@@ -108,13 +209,13 @@ export default function HomePage() {
   );
 }
 
-function TopBar() {
+function TopBar({ locationLabel }: { locationLabel: string }) {
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--outline-variant)] bg-[var(--surface)]">
       <div className="flex h-12 items-center justify-between gap-2 px-4 min-[390px]:px-5">
         <button className="flex min-h-12 min-w-0 items-center gap-1.5 text-label-lg">
           <MapPin className="h-4 w-4 shrink-0" />
-          <span className="truncate">Bangalore, KA</span>
+          <span className="truncate">{locationLabel}</span>
           <ChevronDown className="h-4 w-4 shrink-0" />
         </button>
 
@@ -193,10 +294,12 @@ function ProviderRail({
   compact,
   providers,
   title,
+  emptyMessage,
 }: {
   compact?: boolean;
   providers: Provider[];
   title: string;
+  emptyMessage?: string;
 }) {
   return (
     <section className="min-w-0">
@@ -207,15 +310,21 @@ function ProviderRail({
         </button>
       </div>
 
-      <div className="no-scrollbar -mx-1 flex gap-3 overflow-x-auto overscroll-x-contain px-1 pb-1">
-        {providers.map((provider) => (
-          <ProviderCard
-            compact={compact}
-            key={`${title}-${provider.name}`}
-            provider={provider}
-          />
-        ))}
-      </div>
+      {providers.length === 0 && emptyMessage ? (
+        <p className="rounded-lg border border-dashed border-[var(--outline-variant)] bg-[var(--surface-container-low)] p-4 text-body-sm text-[var(--on-surface-variant)]">
+          {emptyMessage}
+        </p>
+      ) : (
+        <div className="no-scrollbar -mx-1 flex gap-3 overflow-x-auto overscroll-x-contain px-1 pb-1">
+          {providers.map((provider, index) => (
+            <ProviderCard
+              compact={compact}
+              key={`${title}-${provider.name}-${index}`}
+              provider={provider}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }

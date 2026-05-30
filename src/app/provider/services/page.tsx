@@ -6,36 +6,21 @@ import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
-  Brush,
-  Camera,
   Check,
-  ChefHat,
-  GraduationCap,
   Info,
   Plus,
-  PlugZap,
   Sparkles,
-  WandSparkles,
   X,
 } from "lucide-react";
 import {
   providerExperienceLevels,
   providerLanguageOptions,
-  providerServiceOptions,
   type ProviderExperienceId,
   type ProviderServiceId,
 } from "@/lib/provider-profile-draft";
+import { SERVICES } from "@/lib/services";
 import { useProviderProfileDraft } from "@/lib/use-provider-profile-draft";
 import { loadProviderServices, saveProviderServices } from "@/services/provider-services-service";
-
-const serviceIcons = {
-  mehendi: Brush,
-  chef: ChefHat,
-  makeup: WandSparkles,
-  photo: Camera,
-  electrician: PlugZap,
-  tutor: GraduationCap,
-} satisfies Record<ProviderServiceId, typeof Brush>;
 
 type SavingAction = "draft" | "continue" | null;
 
@@ -229,9 +214,8 @@ export default function ProviderServicesPage() {
           ) : null}
 
           <section className="mt-6 grid grid-cols-2 gap-3" aria-label="Service categories">
-            {providerServiceOptions.map(({ id, label }) => {
+            {SERVICES.map(({ id, label, icon: Icon }) => {
               const selected = selectedServices.includes(id);
-              const Icon = serviceIcons[id];
 
               return (
                 <button

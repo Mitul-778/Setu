@@ -1,10 +1,6 @@
-export type ProviderServiceId =
-  | "mehendi"
-  | "chef"
-  | "makeup"
-  | "photo"
-  | "electrician"
-  | "tutor";
+import { SERVICES, serviceLabel, type ServiceId } from "@/lib/services";
+
+export type ProviderServiceId = ServiceId;
 
 export type ProviderExperienceId = "beginner" | "1-3" | "3-5" | "5-plus";
 
@@ -24,10 +20,14 @@ export type ProviderProfileDraft = {
   startingPrice: string;
 };
 
-export const providerServiceOptions = [
-  {
-    id: "mehendi",
-    label: "Mehendi Artist",
+// Per-service onboarding metadata, keyed by the canonical service id from
+// "@/lib/services". Labels and icons live in the shared SERVICES list; this
+// only adds the provider-onboarding extras (suggested names + pricing).
+const serviceMeta: Record<
+  ProviderServiceId,
+  { serviceNames: string[]; pricingGuidance: PricingGuidance[]; startingPrice: string }
+> = {
+  mehendi: {
     serviceNames: ["Basic Bridal Mehendi", "Engagement Mehendi", "Party Mehendi"],
     pricingGuidance: [
       { label: "Basic party mehendi", range: "\u20B9799 - \u20B91,200" },
@@ -36,9 +36,7 @@ export const providerServiceOptions = [
     ],
     startingPrice: "2,000",
   },
-  {
-    id: "chef",
-    label: "Home Chef",
+  chef: {
     serviceNames: ["Daily Home Meals", "Party Snacks", "Weekly Tiffin"],
     pricingGuidance: [
       { label: "Single home meal", range: "\u20B9250 - \u20B9400" },
@@ -47,9 +45,7 @@ export const providerServiceOptions = [
     ],
     startingPrice: "299",
   },
-  {
-    id: "makeup",
-    label: "Makeup Artist",
+  makeup: {
     serviceNames: ["Party Makeup", "Engagement Makeup", "Bridal Trial"],
     pricingGuidance: [
       { label: "Party makeup", range: "\u20B91,499 - \u20B92,500" },
@@ -58,9 +54,7 @@ export const providerServiceOptions = [
     ],
     startingPrice: "1,499",
   },
-  {
-    id: "photo",
-    label: "Photographer",
+  photo: {
     serviceNames: ["Event Photography", "Portrait Shoot", "Product Photos"],
     pricingGuidance: [
       { label: "Portrait session", range: "\u20B91,000 - \u20B92,000" },
@@ -69,9 +63,7 @@ export const providerServiceOptions = [
     ],
     startingPrice: "1,000",
   },
-  {
-    id: "electrician",
-    label: "Electrician",
+  electrician: {
     serviceNames: ["Switch Repair", "Fan Installation", "Emergency Visit"],
     pricingGuidance: [
       { label: "Inspection visit", range: "\u20B9299 - \u20B9499" },
@@ -80,9 +72,7 @@ export const providerServiceOptions = [
     ],
     startingPrice: "299",
   },
-  {
-    id: "tutor",
-    label: "Tutor",
+  tutor: {
     serviceNames: ["Math Tutor", "English Speaking", "Homework Support"],
     pricingGuidance: [
       { label: "Single class", range: "\u20B9400 - \u20B9800" },
@@ -91,13 +81,24 @@ export const providerServiceOptions = [
     ],
     startingPrice: "500",
   },
-] satisfies Array<{
-  id: ProviderServiceId;
-  label: string;
-  serviceNames: string[];
-  pricingGuidance: PricingGuidance[];
-  startingPrice: string;
-}>;
+  plumber: {
+    serviceNames: ["Tap & Faucet Repair", "Pipe Fitting", "Leak Fix"],
+    pricingGuidance: [
+      { label: "Inspection visit", range: "\u20B9199 - \u20B9399" },
+      { label: "Tap or pipe repair", range: "\u20B9400 - \u20B9900" },
+      { label: "Bathroom fitting", range: "\u20B91,500 - \u20B94,000" },
+    ],
+    startingPrice: "299",
+  },
+};
+
+export const providerServiceOptions = SERVICES.map((service) => ({
+  id: service.id,
+  label: service.label,
+  serviceNames: serviceMeta[service.id].serviceNames,
+  pricingGuidance: serviceMeta[service.id].pricingGuidance,
+  startingPrice: serviceMeta[service.id].startingPrice,
+}));
 
 export const providerLanguageOptions = [
   "English",
@@ -188,7 +189,7 @@ export function createStructuredProviderProfileDraft(
 }
 
 export function getServiceLabels(serviceIds: ProviderServiceId[]) {
-  return normalizeServiceIds(serviceIds).map((id) => getServiceOption(id).label);
+  return normalizeServiceIds(serviceIds).map((id) => serviceLabel(id));
 }
 
 export function getExperienceLabel(experienceLevel: ProviderExperienceId) {
@@ -205,7 +206,7 @@ function normalizeServiceIds(serviceIds?: string[]) {
     .filter((id): id is ProviderServiceId => validIds.includes(id as ProviderServiceId))
     .filter((id, index, array) => array.indexOf(id) === index);
 
-  return normalized.length ? normalized : ["chef"];
+  return normalized.length ? normalized : (["chef"] as ProviderServiceId[]);
 }
 
 function normalizeLanguages(languages?: string[]) {
